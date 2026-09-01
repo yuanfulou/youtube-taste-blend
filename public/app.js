@@ -4,6 +4,19 @@
 
 const MAX_SELECTABLE_CHANNELS = 100;
 
+const RANDOM_NICKNAMES = {
+  'zh-TW': [
+    '深夜探險家', '冷門寶藏獵人', '演算法叛徒', '迷因品味家', '知識狂熱者', 
+    '星際拓荒者', '微縮時空旅人', '終極推坑王', '數位遊俠', '復古品味家',
+    '深海潛航者', '鍵盤探險家', '超時空觀察員'
+  ],
+  'en-US': [
+    'Midnight Explorer', 'Hidden Gem Hunter', 'Algorithm Rebel', 'Meme Connoisseur', 'Science Junkie',
+    'Cosmic Nomad', 'Indie Taste Scout', 'Ultimate Curator', 'Cyber Voyager', 'Retro Soul',
+    'Deep Sea Diver', 'Keyboard Nomad', 'Spacetime Watcher'
+  ]
+};
+
 const I18N = {
   'zh-TW': {
     brand_title: 'YouTube Taste Blend',
@@ -59,6 +72,7 @@ const I18N = {
     updated_days_ago: '🔥 {n}天前更新',
     updated_this_week: '本週更新',
     active_channel: '持續活躍',
+    btn_random_name: '隨機匿名',
     modal_share_title: '專屬品味邀請網址已產生！',
     modal_share_desc: '複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。',
     modal_share_label: '專屬分享網址 (含 16-Byte Brotli Hash)：',
@@ -133,6 +147,7 @@ const I18N = {
     updated_days_ago: '🔥 {n}d ago',
     updated_this_week: 'Updated this week',
     active_channel: 'Active channel',
+    btn_random_name: 'Random Anon',
     modal_share_title: 'Your Taste Invite Link is Ready!',
     modal_share_desc: 'Copy the link to your friend or let them scan the QR code to duel.',
     modal_share_label: 'Custom Share Link (with 16-Byte Brotli Hash):',
@@ -225,6 +240,17 @@ function formatLastActive(daysAgo) {
   return t('active_channel');
 }
 
+function generateRandomNickname(target = 'A') {
+  const pool = RANDOM_NICKNAMES[AppState.lang] || RANDOM_NICKNAMES['zh-TW'];
+  const randomName = pool[Math.floor(Math.random() * pool.length)];
+  const inputEl = document.getElementById(target === 'A' ? 'inputUserAName' : 'inputUserBName');
+  if (inputEl) {
+    inputEl.value = randomName;
+    if (target === 'A') AppState.userA.name = randomName;
+    else AppState.userB.name = randomName;
+  }
+}
+
 function toggleLanguage() {
   AppState.lang = AppState.lang === 'zh-TW' ? 'en-US' : 'zh-TW';
   localStorage.setItem('taste_lang', AppState.lang);
@@ -258,6 +284,12 @@ function openOAuthModal() {
 
 function closeOAuthModal() {
   document.getElementById('modalOAuthGuide').classList.add('hidden');
+}
+
+function startGoogleAuth(target = 'A') {
+  const currentHash = window.location.hash || '';
+  const returnTo = `/?target=${target}&logged_in=1${currentHash}`;
+  window.location.href = `/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
 // Toast helper
@@ -334,15 +366,16 @@ function setAppMode(mode) {
 // Check auth status and auto-fetch real subscriptions if logged in
 async function initAuthAndSubscriptions() {
   const urlParams = new URLSearchParams(window.location.search);
+  const targetParam = urlParams.get('target');
   
   if (urlParams.get('oauth_help')) {
     openOAuthModal();
-    window.history.replaceState({}, document.title, window.location.pathname);
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
   }
 
   if (urlParams.get('auth_error')) {
     showToast('Google OAuth 授權失敗: ' + urlParams.get('auth_error'), 'error');
-    window.history.replaceState({}, document.title, window.location.pathname);
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
   }
 
   try {
@@ -351,17 +384,37 @@ async function initAuthAndSubscriptions() {
     AppState.isAuthenticated = statusData.authenticated;
 
     if (AppState.isAuthenticated) {
-      const target = AppState.mode === 'receiver' ? 'B' : 'A';
+      // Determine which user account to populate based on targetParam or active view mode
+      const activeTarget = (targetParam === 'B' || AppState.mode === 'receiver') ? 'B' : 'A';
+      
       const subRes = await fetch('/api/subscriptions');
       const subData = await subRes.json();
 
       if (subData.channels && subData.channels.length > 0) {
-        const user = target === 'A' ? AppState.userA : AppState.userB;
+        const user = activeTarget === 'A' ? AppState.userA : AppState.userB;
         user.channels = subData.channels;
+        
+        // Auto preload profile name from YouTube if available
+        if (statusData.profileName) {
+          user.name = statusData.profileName;
+          const nameInput = document.getElementById(activeTarget === 'A' ? 'inputUserAName' : 'inputUserBName');
+          if (nameInput) nameInput.value = statusData.profileName;
+        }
+
         const initialSelected = subData.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
         user.selectedIds = new Set(initialSelected.map(c => c.id));
-        renderCategoryTabs(target);
-        renderChannelSelection(target);
+        
+        renderCategoryTabs(activeTarget);
+        renderChannelSelection(activeTarget);
+
+        // If User B just logged in, ensure we remain in receiver view and User A has sample data
+        if (activeTarget === 'B') {
+          setAppMode('receiver');
+          if (AppState.userA.channels.length === 0) {
+            loadSubscriptions('A', 'A');
+          }
+        }
+
         showToast(t('toast_real_loaded'), 'success');
         return;
       }
@@ -402,7 +455,6 @@ function renderCategoryTabs(target = 'A') {
 
   if (!tabsContainer) return;
 
-  // Count channels per category
   const categoryCounts = {};
   let indieCount = 0;
 
@@ -649,19 +701,21 @@ async function runBlendWithUserA() {
   showToast(t('toast_blending'), 'info');
 
   try {
+    // If User A has no payload but has channels, blend directly
+    const bodyPayload = {
+      userA: AppState.userA.payload 
+        ? { name: AppState.userA.name, payload: AppState.userA.payload }
+        : { name: AppState.userA.name, channels: AppState.userA.channels.filter(c => AppState.userA.selectedIds.has(c.id)) },
+      userB: {
+        name: nameB,
+        channels: selectedChannelsB
+      }
+    };
+
     const res = await fetch('/api/blend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userA: {
-          name: AppState.userA.name,
-          payload: AppState.userA.payload
-        },
-        userB: {
-          name: nameB,
-          channels: selectedChannelsB
-        }
-      })
+      body: JSON.stringify(bodyPayload)
     });
 
     const data = await res.json();

@@ -7,13 +7,23 @@ export function createAuthRouter(youtubeService: YouTubeService): Router {
   /**
    * GET /auth/status - Returns configuration status and session state
    */
-  router.get('/status', (req: Request, res: Response) => {
+  router.get('/status', async (req: Request, res: Response) => {
     const isConfigured = youtubeService.getIsConfigured();
     const token = req.cookies?.yt_access_token;
+    let profileName: string | undefined = undefined;
+
+    if (token) {
+      try {
+        profileName = await youtubeService.fetchUserProfileName(token);
+      } catch (e) {
+        // Token might be expired or failed to fetch name
+      }
+    }
 
     res.json({
       configured: isConfigured,
       authenticated: Boolean(token),
+      profileName,
       hasMockMode: true
     });
   });
@@ -22,7 +32,7 @@ export function createAuthRouter(youtubeService: YouTubeService): Router {
    * GET /auth/google - Initiates Google OAuth redirect
    */
   router.get('/google', (req: Request, res: Response) => {
-    const returnTo = (req.query.returnTo as string) || '/';
+    const returnTo = (req.query.returnTo as string) || '/?logged_in=1';
     
     if (!youtubeService.getIsConfigured()) {
       return res.redirect('/?oauth_help=1');
@@ -63,7 +73,11 @@ export function createAuthRouter(youtubeService: YouTubeService): Router {
         });
       }
 
-      const returnUrl = (typeof state === 'string' && state.startsWith('/')) ? state : '/?logged_in=1';
+      // Preserve returnUrl and target (e.g. Receiver view / target=B)
+      let returnUrl = '/?logged_in=1';
+      if (typeof state === 'string' && state.startsWith('/')) {
+        returnUrl = state;
+      }
       res.redirect(returnUrl);
     } catch (err: any) {
       res.redirect(`/?auth_error=${encodeURIComponent(err.message)}`);

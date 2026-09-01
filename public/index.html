@@ -96,9 +96,9 @@
             <p class="text-xs text-slate-400" data-i18n="manage_subs_desc">可搜尋與取消勾選不想讓好友知道的私人/敏感頻道</p>
           </div>
           <div class="flex items-center gap-2">
-            <a href="/auth/google" class="btn-google-oauth px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-rose-600/30 flex items-center gap-2">
+            <button onclick="startGoogleAuth('A')" class="btn-google-oauth px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-rose-600/30 flex items-center gap-2">
               <i class="fa-brands fa-google"></i> <span data-i18n="btn_google_login">登入 Google 同步</span>
-            </a>
+            </button>
             <button onclick="loadSubscriptions('A', 'A')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 transition">
               <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> <span data-i18n="btn_mock_data">一鍵示範資料</span>
             </button>
@@ -107,11 +107,16 @@
 
         <!-- Name & Filter Bar -->
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-          <div class="md:col-span-4">
-            <label class="text-[11px] font-bold text-slate-400 block mb-1" data-i18n="label_nickname">你的暱稱：</label>
+          <div class="md:col-span-5">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] font-bold text-slate-400 block" data-i18n="label_nickname">你的暱稱：</label>
+              <button onclick="generateRandomNickname('A')" class="text-[10px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 transition">
+                <i class="fa-solid fa-dice"></i> <span data-i18n="btn_random_name">隨機匿名</span>
+              </button>
+            </div>
             <input type="text" id="inputUserAName" value="Alice" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-rose-500 font-semibold" />
           </div>
-          <div class="md:col-span-8">
+          <div class="md:col-span-7">
             <label class="text-[11px] font-bold text-slate-400 block mb-1" data-i18n="label_search">快速搜尋頻道：</label>
             <div class="relative">
               <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-xs text-slate-500"></i>
@@ -191,9 +196,9 @@
             <p class="text-xs text-slate-400"><span data-i18n="receiver_config_desc">已成功載入好友的加密品味數據</span> (<span id="receiverInviterBadge" class="text-purple-400 font-bold">好友</span>)</p>
           </div>
           <div class="flex items-center gap-2">
-            <a href="/auth/google" class="btn-google-oauth px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-purple-600/30 flex items-center gap-2">
+            <button onclick="startGoogleAuth('B')" class="btn-google-oauth px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-purple-600/30 flex items-center gap-2">
               <i class="fa-brands fa-google"></i> <span data-i18n="btn_google_login">登入 Google 同步</span>
-            </a>
+            </button>
             <button onclick="loadSubscriptions('B', 'B')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 transition">
               <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> <span data-i18n="btn_mock_data">一鍵示範資料 (User B)</span>
             </button>
@@ -201,11 +206,16 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-          <div class="md:col-span-4">
-            <label class="text-[11px] font-bold text-slate-400 block mb-1" data-i18n="label_nickname">你的暱稱：</label>
+          <div class="md:col-span-5">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] font-bold text-slate-400 block" data-i18n="label_nickname">你的暱稱：</label>
+              <button onclick="generateRandomNickname('B')" class="text-[10px] text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1 transition">
+                <i class="fa-solid fa-dice"></i> <span data-i18n="btn_random_name">隨機匿名</span>
+              </button>
+            </div>
             <input type="text" id="inputUserBName" value="Bob" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 font-semibold" />
           </div>
-          <div class="md:col-span-8">
+          <div class="md:col-span-7">
             <label class="text-[11px] font-bold text-slate-400 block mb-1" data-i18n="label_search">快速搜尋頻道：</label>
             <div class="relative">
               <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-xs text-slate-500"></i>

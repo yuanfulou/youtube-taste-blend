@@ -92,6 +92,36 @@ export class YouTubeService {
   }
 
   /**
+   * Fetches the user's YouTube channel / Google display name
+   */
+  public async fetchUserProfileName(accessToken: string): Promise<string> {
+    const auth = new google.auth.OAuth2();
+    auth.setCredentials({ access_token: accessToken });
+
+    try {
+      const youtube = google.youtube({ version: 'v3', auth });
+      const channelRes = await youtube.channels.list({
+        part: ['snippet'],
+        mine: true
+      });
+      const title = channelRes.data.items?.[0]?.snippet?.title;
+      if (title) return title;
+    } catch (e) {
+      // Fallback
+    }
+
+    try {
+      const oauth2 = google.oauth2({ version: 'v2', auth });
+      const userRes = await oauth2.userinfo.get();
+      if (userRes.data.name) return userRes.data.name;
+    } catch (e) {
+      // Fallback
+    }
+
+    return 'YouTube 探險家';
+  }
+
+  /**
    * Helper to parse category from Wikipedia Topic URLs
    */
   private static parseCategoryFromTopics(topics?: string[]): string {
