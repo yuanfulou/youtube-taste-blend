@@ -161,5 +161,37 @@ export function createApiRouter(youtubeService: YouTubeService): Router {
     }
   });
 
+  /**
+   * GET /api/qrcode - Generates high-resolution PNG data URI of a QR code
+   */
+  router.get('/qrcode', async (req: Request, res: Response) => {
+    const text = req.query.text as string;
+    const width = Number(req.query.width) || 240;
+
+    if (!text) {
+      return res.status(400).json({ error: 'text query parameter is required' });
+    }
+
+    try {
+      // Dynamic import to support ESM/CJS compatibility
+      const QRCode = await import('qrcode');
+      const dataUrl = await QRCode.default.toDataURL(text, {
+        width,
+        margin: 1,
+        color: {
+          dark: '#090d16',
+          light: '#ffffff'
+        }
+      });
+
+      res.json({
+        success: true,
+        dataUrl
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   return router;
 }

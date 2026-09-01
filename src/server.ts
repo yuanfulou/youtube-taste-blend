@@ -27,6 +27,7 @@ app.use(cookieParser(config.sessionSecret));
 // Public static files
 const publicDir = path.resolve(__dirname, '../public');
 app.use(express.static(publicDir));
+app.use('/vendor/qrcode', express.static(path.resolve(__dirname, '../node_modules/qrcode/build')));
 
 // Routes
 app.use('/auth', createAuthRouter(youtubeService));

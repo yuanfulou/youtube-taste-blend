@@ -74,7 +74,7 @@ const I18N = {
     subs_count: '訂閱',
     updated_today: '🔥 今天更新',
     updated_yesterday: '🔥 昨天更新',
-    updated_days_ago: '🔥 {n}天前更新',
+    updated_days_ago: '🔥 {n}d ago',
     updated_this_week: '本週更新',
     active_channel: '持續活躍',
     btn_random_name: '隨機匿名',
@@ -714,21 +714,39 @@ function formatSubscriberCount(count) {
   }
 }
 
-// Render QR Code onto a canvas using modern QRCode engine
-function drawQrCodeToCanvas(canvasId, text, width = 140) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas || !window.QRCode || !text) return;
+// Render QR Code onto an <img> element using client QRCode with server fallback
+async function renderQrCodeToImage(imgElementId, text, width = 160) {
+  const imgEl = document.getElementById(imgElementId);
+  if (!imgEl || !text) return;
 
-  QRCode.toCanvas(canvas, text, {
-    width,
-    margin: 1,
-    color: {
-      dark: '#090d16',
-      light: '#ffffff'
+  // 1. Try Client-side QRCode.toDataURL
+  if (window.QRCode && typeof window.QRCode.toDataURL === 'function') {
+    try {
+      const dataUrl = await window.QRCode.toDataURL(text, {
+        width,
+        margin: 1,
+        color: {
+          dark: '#090d16',
+          light: '#ffffff'
+        }
+      });
+      imgEl.src = dataUrl;
+      return;
+    } catch (e) {
+      console.warn('Client QRCode.toDataURL error, trying API fallback', e);
     }
-  }, (err) => {
-    if (err) console.error('QR code generation error:', err);
-  });
+  }
+
+  // 2. Server API fallback (/api/qrcode)
+  try {
+    const res = await fetch(`/api/qrcode?text=${encodeURIComponent(text)}&width=${width}`);
+    const data = await res.json();
+    if (data.dataUrl) {
+      imgEl.src = data.dataUrl;
+    }
+  } catch (err) {
+    console.error('Failed to load QR code from fallback API', err);
+  }
 }
 
 // Generate Share URL (User A)
@@ -758,7 +776,7 @@ async function generateShareUrl() {
       document.getElementById('outputShareUrl').value = shareUrl;
       document.getElementById('modalShareLink').classList.remove('hidden');
 
-      drawQrCodeToCanvas('modalQrCanvas', shareUrl, 160);
+      await renderQrCodeToImage('modalQrImg', shareUrl, 200);
       showToast(t('toast_generating'), 'success');
     }
   } catch (err) {
@@ -814,7 +832,7 @@ async function runBlendWithUserA() {
     const data = await res.json();
     if (data.success) {
       AppState.blendResult = data.result;
-      renderBlendResultsView();
+      await renderBlendResultsView();
       setAppMode('result');
 
       if (window.confetti) {
@@ -881,18 +899,18 @@ async function renderBlendResultsView() {
   if (cardCommonPreview && cardCommonChips) {
     if (res.commonChannels.length > 0) {
       cardCommonPreview.classList.remove('hidden');
-      const topChips = res.commonChannels.slice(0, 4);
+      const topChips = res.commonChannels.slice(0, 3);
       cardCommonChips.innerHTML = topChips.map(c => `
-        <span class="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-200 text-[10px] font-semibold border border-slate-700">
+        <span class="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-200 text-[9px] font-semibold border border-slate-700 max-w-[120px] truncate inline-block">
           ${c.title}
         </span>
-      `).join('') + (res.commonChannels.length > 4 ? `<span class="text-[10px] text-slate-400 font-medium">+${res.commonChannels.length - 4}</span>` : '');
+      `).join('') + (res.commonChannels.length > 3 ? `<span class="text-[9px] text-slate-400 font-medium">+${res.commonChannels.length - 3}</span>` : '');
     } else {
       cardCommonPreview.classList.add('hidden');
     }
   }
 
-  // Generate User B's packed invite URL and draw onto card QR canvas
+  // Generate User B's packed invite URL and render onto card QR image
   try {
     const selectedChannelsB = AppState.userB.channels.filter(c => AppState.userB.selectedIds.has(c.id));
     if (selectedChannelsB.length > 0) {
@@ -906,7 +924,7 @@ async function renderBlendResultsView() {
       if (packData.success) {
         AppState.userB.payload = packData.payload;
         const duelShareUrl = `${window.location.origin}/#u1=${packData.payload}&name=${encodeURIComponent(nameB)}`;
-        drawQrCodeToCanvas('cardQrCanvas', duelShareUrl, 90);
+        await renderQrCodeToImage('cardQrImg', duelShareUrl, 120);
         const qrSubEl = document.getElementById('cardQrSubtext');
         if (qrSubEl) qrSubEl.innerText = t('card_qr_sub', { name: nameB });
       }
@@ -1003,7 +1021,7 @@ async function shareAsUserB() {
       document.getElementById('outputShareUrl').value = shareUrl;
       document.getElementById('modalShareLink').classList.remove('hidden');
 
-      drawQrCodeToCanvas('modalQrCanvas', shareUrl, 160);
+      await renderQrCodeToImage('modalQrImg', shareUrl, 200);
       showToast(t('toast_generating'), 'success');
     }
   } catch (err) {
@@ -1021,7 +1039,7 @@ async function exportTasteCard() {
     if (window.html2canvas) {
       const canvas = await html2canvas(cardElement, {
         backgroundColor: '#030712',
-        scale: 2,
+        scale: 2.5,
         useCORS: true,
         logging: false
       });
