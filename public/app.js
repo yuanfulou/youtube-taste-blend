@@ -41,6 +41,7 @@ const I18N = {
     label_nickname: '你的暱稱：',
     label_search: '快速搜尋頻道：',
     label_category_filter: '分類篩選：',
+    chart_title: '品味主題分佈 (Taste Distribution)',
     search_placeholder: '輸入關鍵字篩選...',
     filter_all: '全部',
     filter_indie: '✨ 僅小眾寶藏',
@@ -140,6 +141,7 @@ const I18N = {
     label_nickname: 'Your Nickname:',
     label_search: 'Search Channels:',
     label_category_filter: 'Categories:',
+    chart_title: 'Taste Distribution (Radar)',
     search_placeholder: 'Filter by keywords...',
     filter_all: 'All',
     filter_indie: '✨ Indie Gems Only',
@@ -658,6 +660,175 @@ function renderCategoryTabs(target = 'A') {
   });
 
   tabsContainer.innerHTML = html;
+  renderCategoryChart(target);
+}
+
+let chartInstanceA = null;
+let chartInstanceB = null;
+
+const CATEGORY_COLORS = [
+  '#f43f5e', '#a855f7', '#06b6d4', '#10b981', '#f59e0b',
+  '#6366f1', '#ec4899', '#3b82f6', '#84cc16', '#8b5cf6'
+];
+
+function getDominantPersona(topCategory, indieRatio) {
+  const isEn = AppState.lang === 'en-US';
+  if (indieRatio >= 0.3) {
+    return isEn ? '✨ Indie Gem Hunter' : '✨ 冷門寶藏獵人';
+  }
+  const personaMap = {
+    '科技': { zh: '硬核科技狂 💻', en: 'Tech Enthusiast 💻' },
+    '程式開發': { zh: '極客工程師 ⚡', en: 'Code Wizard ⚡' },
+    '科普': { zh: '科學好奇狂 🔬', en: 'Science Scout 🔬' },
+    '知識': { zh: '深度求知者 🧠', en: 'Knowledge Seeker 🧠' },
+    '遊戲': { zh: '硬核電競玩家 🎮', en: 'Hardcore Gamer 🎮' },
+    '影視娛樂': { zh: '流行影視通 🍿', en: 'Film & Pop Critic 🍿' },
+    '娛樂': { zh: '快樂衝浪手 🎪', en: 'Entertainment Scout 🎪' },
+    '音樂': { zh: '音律漫遊者 🎧', en: 'Audiophile 🎧' },
+    '美食料理': { zh: '深夜老饕 🍜', en: 'Gourmet Foodie 🍜' },
+    '生活風格': { zh: '質感生活家 🌿', en: 'Lifestyle Curator 🌿' },
+    '時事社會': { zh: '時事觀察員 📰', en: 'Insightful Observer 📰' },
+    '時事政經': { zh: '政經分析家 📈', en: 'Finance Analyst 📈' },
+    '商業理財': { zh: '商業投資家 💰', en: 'Smart Investor 💰' },
+    '動漫': { zh: '二次元住民 🎌', en: 'Anime Voyager 🎌' }
+  };
+
+  if (personaMap[topCategory]) {
+    return isEn ? personaMap[topCategory].en : personaMap[topCategory].zh;
+  }
+  return isEn ? 'Eclectic Curator ✨' : '多元品味家 ✨';
+}
+
+function renderCategoryChart(target = 'A') {
+  const user = target === 'A' ? AppState.userA : AppState.userB;
+  const canvasEl = document.getElementById(target === 'A' ? 'categoryChartCanvasA' : 'categoryChartCanvasB');
+  const legendEl = document.getElementById(target === 'A' ? 'chartLegendA' : 'chartLegendB');
+  const personaBadge = document.getElementById(target === 'A' ? 'chartPersonaBadgeA' : 'chartPersonaBadgeB');
+  const chartCard = document.getElementById(target === 'A' ? 'categoryChartCardA' : 'categoryChartCardB');
+
+  if (!canvasEl || !legendEl) return;
+
+  if (user.channels.length === 0) {
+    if (chartCard) chartCard.classList.add('hidden');
+    return;
+  }
+  if (chartCard) chartCard.classList.remove('hidden');
+
+  const categoryCounts = {};
+  let indieCount = 0;
+  user.channels.forEach(c => {
+    const cat = c.category || '綜合';
+    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    if (c.isIndie) indieCount++;
+  });
+
+  const sortedCategories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
+  const total = user.channels.length;
+
+  const labels = [];
+  const data = [];
+  const colors = [];
+  let otherSum = 0;
+
+  sortedCategories.forEach((cat, idx) => {
+    if (idx < 5) {
+      labels.push(getCategoryDisplayName(cat));
+      data.push(categoryCounts[cat]);
+      colors.push(CATEGORY_COLORS[idx % CATEGORY_COLORS.length]);
+    } else {
+      otherSum += categoryCounts[cat];
+    }
+  });
+
+  if (otherSum > 0) {
+    labels.push(AppState.lang === 'en-US' ? 'Other' : '其他');
+    data.push(otherSum);
+    colors.push('#64748b');
+  }
+
+  // Update Persona Badge
+  const topCat = sortedCategories[0] || '綜合';
+  const dominantPersona = getDominantPersona(topCat, indieCount / total);
+  if (personaBadge) {
+    personaBadge.innerText = dominantPersona;
+  }
+
+  // Render Interactive Legend Progress Bars
+  legendEl.innerHTML = sortedCategories.slice(0, 5).map((cat, idx) => {
+    const count = categoryCounts[cat];
+    const pct = Math.round((count / total) * 100);
+    const color = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
+    const displayName = getCategoryDisplayName(cat);
+
+    return `
+      <div onclick="setCategoryFilter('${target}', '${cat}')" class="flex items-center justify-between gap-2 p-1.5 rounded-lg hover:bg-slate-800/60 cursor-pointer transition text-[11px] group">
+        <div class="flex items-center gap-2 truncate">
+          <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${color}"></span>
+          <span class="text-slate-300 group-hover:text-white font-medium truncate">${displayName}</span>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <div class="w-16 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="h-full rounded-full" style="width: ${pct}%; background-color: ${color}"></div>
+          </div>
+          <span class="text-slate-400 font-mono text-[10px] w-7 text-right">${pct}%</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Render / Update Chart.js Donut Chart
+  if (window.Chart) {
+    let existingChart = target === 'A' ? chartInstanceA : chartInstanceB;
+    if (existingChart) {
+      existingChart.destroy();
+    }
+
+    const ctx = canvasEl.getContext('2d');
+    const newChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          backgroundColor: colors,
+          borderColor: '#0b0f19',
+          borderWidth: 2,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            borderColor: '#334155',
+            borderWidth: 1,
+            titleFont: { size: 11, weight: 'bold' },
+            bodyFont: { size: 11 },
+            padding: 8,
+            cornerRadius: 10,
+            callbacks: {
+              label: (context) => ` ${context.label}: ${context.parsed} (${Math.round((context.parsed / total) * 100)}%)`
+            }
+          }
+        },
+        onClick: (evt, elements) => {
+          if (elements && elements.length > 0) {
+            const index = elements[0].index;
+            if (index < 5 && sortedCategories[index]) {
+              setCategoryFilter(target, sortedCategories[index]);
+            }
+          }
+        }
+      }
+    });
+
+    if (target === 'A') chartInstanceA = newChart;
+    else chartInstanceB = newChart;
+  }
 }
 
 function setCategoryFilter(target, catKey) {
