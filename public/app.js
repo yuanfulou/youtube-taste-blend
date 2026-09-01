@@ -5,6 +5,8 @@
 const MAX_SELECTABLE_CHANNELS = 100;
 const CHANNELS_PER_PAGE = 40;
 
+const EMOJI_AVATARS = ['🦊', '🐱', '🤖', '🚀', '🐼', '👾', '🦄', '🐯', '🥑', '⚡', '☕', '🎧', '🎮', '🛸', '🎯', '✨'];
+
 const RANDOM_NICKNAMES = {
   'zh-TW': [
     '深夜探險家', '冷門寶藏獵人', '演算法叛徒', '迷因品味家', '知識狂熱者', 
@@ -80,6 +82,8 @@ const I18N = {
     page_prev: '◀ 上一頁',
     page_next: '下一頁 ▶',
     page_info: '第 {current} / {total} 頁 (共 {count} 個頻道)',
+    card_qr_prompt: '📲 掃描 QR 碼換你發起對決！',
+    card_qr_sub: '與 {name} 比對 YouTube 訂閱契合度',
     modal_share_title: '專屬品味邀請網址已產生！',
     modal_share_desc: '複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。',
     modal_share_label: '專屬分享網址 (含 16-Byte Brotli Hash)：',
@@ -161,6 +165,8 @@ const I18N = {
     page_prev: '◀ Prev',
     page_next: 'Next ▶',
     page_info: 'Page {current} / {total} ({count} channels)',
+    card_qr_prompt: '📲 Scan to Duel & Compare Taste!',
+    card_qr_sub: 'Duel with {name} on YouTube taste radar',
     modal_share_title: 'Your Taste Invite Link is Ready!',
     modal_share_desc: 'Copy the link to your friend or let them scan the QR code to duel.',
     modal_share_label: 'Custom Share Link (with 16-Byte Brotli Hash):',
@@ -237,6 +243,17 @@ function t(key, vars = {}) {
     text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
   }
   return text;
+}
+
+function getAvatarEmoji(name, defaultIndex = 0) {
+  if (!name) return EMOJI_AVATARS[defaultIndex % EMOJI_AVATARS.length];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const index = Math.abs(hash) % EMOJI_AVATARS.length;
+  return EMOJI_AVATARS[index];
 }
 
 function getCategoryDisplayName(catKey) {
@@ -532,15 +549,6 @@ function changePage(target, pageDelta) {
   renderChannelSelection(target);
 }
 
-function goToPage(target, pageNum) {
-  if (target === 'A') {
-    AppState.pageA = pageNum;
-  } else {
-    AppState.pageB = pageNum;
-  }
-  renderChannelSelection(target);
-}
-
 // Render Channel Selection List with High-Performance Pagination
 function renderChannelSelection(target = 'A') {
   const user = target === 'A' ? AppState.userA : AppState.userB;
@@ -588,7 +596,7 @@ function renderChannelSelection(target = 'A') {
   const endIndex = Math.min(startIndex + CHANNELS_PER_PAGE, filtered.length);
   const pagedItems = filtered.slice(startIndex, endIndex);
 
-  // Render items (ultra fast)
+  // Render items
   listEl.innerHTML = pagedItems.map(c => {
     const isChecked = user.selectedIds.has(c.id);
     const activeText = formatLastActive(c.lastActiveDaysAgo ?? 14);
@@ -706,6 +714,23 @@ function formatSubscriberCount(count) {
   }
 }
 
+// Render QR Code onto a canvas using modern QRCode engine
+function drawQrCodeToCanvas(canvasId, text, width = 140) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !window.QRCode || !text) return;
+
+  QRCode.toCanvas(canvas, text, {
+    width,
+    margin: 1,
+    color: {
+      dark: '#090d16',
+      light: '#ffffff'
+    }
+  }, (err) => {
+    if (err) console.error('QR code generation error:', err);
+  });
+}
+
 // Generate Share URL (User A)
 async function generateShareUrl() {
   const name = document.getElementById('inputUserAName').value.trim() || 'Alice';
@@ -733,18 +758,7 @@ async function generateShareUrl() {
       document.getElementById('outputShareUrl').value = shareUrl;
       document.getElementById('modalShareLink').classList.remove('hidden');
 
-      const qrContainer = document.getElementById('qrcodeContainer');
-      qrContainer.innerHTML = '';
-      if (window.QRCode) {
-        new QRCode(qrContainer, {
-          text: shareUrl,
-          width: 140,
-          height: 140,
-          colorDark: '#0f172a',
-          colorLight: '#ffffff'
-        });
-      }
-
+      drawQrCodeToCanvas('modalQrCanvas', shareUrl, 160);
       showToast(t('toast_generating'), 'success');
     }
   } catch (err) {
@@ -781,7 +795,6 @@ async function runBlendWithUserA() {
   try {
     const selectedChannelsA = AppState.userA.channels.filter(c => AppState.userA.selectedIds.has(c.id));
     
-    // If User A has channels in memory, pass them directly
     const userABody = selectedChannelsA.length > 0
       ? { name: AppState.userA.name, channels: selectedChannelsA }
       : { name: AppState.userA.name, payload: AppState.userA.payload };
@@ -817,7 +830,7 @@ async function runBlendWithUserA() {
   }
 }
 
-function renderBlendResultsView() {
+async function renderBlendResultsView() {
   const res = AppState.blendResult;
   if (!res) return;
 
@@ -827,6 +840,15 @@ function renderBlendResultsView() {
 
   document.getElementById('resUserAName').innerText = nameA;
   document.getElementById('resUserBName').innerText = nameB;
+
+  // Dynamic emoji avatars
+  const avatarA = getAvatarEmoji(nameA, 0);
+  const avatarB = getAvatarEmoji(nameB, 1);
+  const avatarAEl = document.getElementById('avatarUserA');
+  const avatarBEl = document.getElementById('avatarUserB');
+  if (avatarAEl) avatarAEl.innerText = avatarA;
+  if (avatarBEl) avatarBEl.innerText = avatarB;
+
   document.getElementById('resChemistryLevel').innerText = isEn ? res.stats.chemistryLevelEn : res.stats.chemistryLevel;
   document.getElementById('resMatchScore').innerText = `${res.stats.matchPercentage}%`;
   document.getElementById('resChemistryDesc').innerText = isEn ? res.stats.chemistryDescriptionEn : res.stats.chemistryDescription;
@@ -852,6 +874,46 @@ function renderBlendResultsView() {
   document.getElementById('tabCountAOnly').innerText = res.stats.aOnlyCount;
   document.getElementById('tabCountBOnly').innerText = res.stats.bOnlyCount;
   document.getElementById('tabCountIndie').innerText = res.indieGems.length;
+
+  // Render Top Common Chips Preview on Card
+  const cardCommonPreview = document.getElementById('cardCommonPreview');
+  const cardCommonChips = document.getElementById('cardCommonChips');
+  if (cardCommonPreview && cardCommonChips) {
+    if (res.commonChannels.length > 0) {
+      cardCommonPreview.classList.remove('hidden');
+      const topChips = res.commonChannels.slice(0, 4);
+      cardCommonChips.innerHTML = topChips.map(c => `
+        <span class="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-200 text-[10px] font-semibold border border-slate-700">
+          ${c.title}
+        </span>
+      `).join('') + (res.commonChannels.length > 4 ? `<span class="text-[10px] text-slate-400 font-medium">+${res.commonChannels.length - 4}</span>` : '');
+    } else {
+      cardCommonPreview.classList.add('hidden');
+    }
+  }
+
+  // Generate User B's packed invite URL and draw onto card QR canvas
+  try {
+    const selectedChannelsB = AppState.userB.channels.filter(c => AppState.userB.selectedIds.has(c.id));
+    if (selectedChannelsB.length > 0) {
+      const channelIdsB = selectedChannelsB.map(c => c.id);
+      const packRes = await fetch('/api/pack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelIds: channelIdsB })
+      });
+      const packData = await packRes.json();
+      if (packData.success) {
+        AppState.userB.payload = packData.payload;
+        const duelShareUrl = `${window.location.origin}/#u1=${packData.payload}&name=${encodeURIComponent(nameB)}`;
+        drawQrCodeToCanvas('cardQrCanvas', duelShareUrl, 90);
+        const qrSubEl = document.getElementById('cardQrSubtext');
+        if (qrSubEl) qrSubEl.innerText = t('card_qr_sub', { name: nameB });
+      }
+    }
+  } catch (e) {
+    console.warn('Could not render User B card QR code', e);
+  }
 
   switchResultTab('common');
 }
@@ -935,23 +997,13 @@ async function shareAsUserB() {
     const data = await res.json();
 
     if (data.success) {
+      AppState.userB.payload = data.payload;
       const shareUrl = `${window.location.origin}/#u1=${data.payload}&name=${encodeURIComponent(AppState.userB.name)}`;
       
       document.getElementById('outputShareUrl').value = shareUrl;
       document.getElementById('modalShareLink').classList.remove('hidden');
 
-      const qrContainer = document.getElementById('qrcodeContainer');
-      qrContainer.innerHTML = '';
-      if (window.QRCode) {
-        new QRCode(qrContainer, {
-          text: shareUrl,
-          width: 140,
-          height: 140,
-          colorDark: '#0f172a',
-          colorLight: '#ffffff'
-        });
-      }
-
+      drawQrCodeToCanvas('modalQrCanvas', shareUrl, 160);
       showToast(t('toast_generating'), 'success');
     }
   } catch (err) {
@@ -968,9 +1020,10 @@ async function exportTasteCard() {
   try {
     if (window.html2canvas) {
       const canvas = await html2canvas(cardElement, {
-        backgroundColor: '#090d16',
+        backgroundColor: '#030712',
         scale: 2,
-        useCORS: true
+        useCORS: true,
+        logging: false
       });
 
       const imgData = canvas.toDataURL('image/png');
