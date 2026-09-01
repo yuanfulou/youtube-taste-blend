@@ -120,7 +120,7 @@
           </div>
         </div>
 
-        <!-- Quick Presets Bar (NEW) -->
+        <!-- Quick Presets Bar -->
         <div class="flex items-center justify-between flex-wrap gap-2 p-2.5 bg-slate-900/80 rounded-2xl border border-slate-800/80 text-xs">
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="text-slate-400 font-semibold text-[11px]" data-i18n="quick_presets">快速預選：</span>
@@ -392,7 +392,7 @@
   <!-- MODAL: GOOGLE OAUTH SETUP GUIDE            -->
   <!-- ========================================== -->
   <div id="modalOAuthGuide" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
-    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-lg w-full border border-amber-500/40 space-y-5 shadow-2xl relative">
+    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-xl w-full border border-amber-500/40 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       <button onclick="closeOAuthModal()" class="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -402,25 +402,41 @@
           <i class="fa-solid fa-key"></i>
         </div>
         <div>
-          <h3 class="text-lg font-bold text-white" data-i18n="oauth_modal_title">Google OAuth 設定說明</h3>
-          <p class="text-xs text-slate-400" data-i18n="oauth_modal_desc">如欲使用真正的 Google 帳號授權同步訂閱，請完成以下 3 個簡單步驟：</p>
+          <h3 class="text-lg font-bold text-white">Google OAuth 設定指南 (Google Cloud Console)</h3>
+          <p class="text-xs text-slate-400">建立憑證時請注意「JavaScript 來源」與「重新導向 URI」的填法區別：</p>
         </div>
       </div>
 
-      <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 space-y-3 text-xs text-slate-300 leading-relaxed">
-        <p data-i18n="oauth_step1">1. 至 Google Cloud Console 啟用 YouTube Data API v3。</p>
+      <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 space-y-4 text-xs text-slate-300 leading-relaxed">
         <div>
-          <p data-i18n="oauth_step2">2. 建立 OAuth 2.0 憑證，並將重新導向 URI 設定為：</p>
-          <div class="mt-1 space-y-1 font-mono text-[11px] text-amber-300 bg-slate-950 p-2.5 rounded-xl border border-slate-800 select-all">
+          <p class="font-bold text-slate-200 mb-1">1️⃣ 已授權的 JavaScript 來源 (Authorized JavaScript origins)：</p>
+          <p class="text-slate-400 text-[11px] mb-1.5">⚠️ <span class="text-rose-400 font-bold">不可包含任何路徑 (Path)</span>，也不可以 <code class="text-slate-300 bg-slate-800 px-1 rounded">/</code> 結尾：</p>
+          <div class="space-y-1 font-mono text-[11px] text-emerald-400 bg-slate-950 p-2.5 rounded-xl border border-slate-800 select-all">
+            <p>http://localhost:3030</p>
+            <p>http://100.127.138.61:3030</p>
+          </div>
+        </div>
+
+        <div>
+          <p class="font-bold text-slate-200 mb-1">2️⃣ 已授權的重新導向 URI (Authorized redirect URIs)：</p>
+          <p class="text-slate-400 text-[11px] mb-1.5">填入包含 <code class="text-amber-300 bg-slate-800 px-1 rounded">/auth/callback</code> 的完整路徑：</p>
+          <div class="space-y-1 font-mono text-[11px] text-amber-300 bg-slate-950 p-2.5 rounded-xl border border-slate-800 select-all">
             <p>http://localhost:3030/auth/callback</p>
             <p>http://100.127.138.61:3030/auth/callback</p>
           </div>
         </div>
-        <p data-i18n="oauth_step3">3. 將 Client ID 與 Secret 填入專案的 .env 檔案並重啟。</p>
+
+        <div>
+          <p class="font-bold text-slate-200 mb-1">3️⃣ 將 Client ID 與 Secret 貼入專案 .env 檔案：</p>
+          <div class="font-mono text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded-xl border border-slate-800 select-all">
+            <p>GOOGLE_CLIENT_ID=你的_CLIENT_ID.apps.googleusercontent.com</p>
+            <p>GOOGLE_CLIENT_SECRET=你的_CLIENT_SECRET</p>
+          </div>
+        </div>
       </div>
 
-      <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-900/60 text-xs text-amber-300" data-i18n="oauth_tip">
-        💡 提示：在尚未設定金鑰前，您可以點擊【一鍵示範資料】直接進行全功能體驗！
+      <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-900/60 text-xs text-amber-300">
+        💡 提示：在尚未設定金鑰前，您可以隨時點擊【一鍵示範資料】直接進行雙人品味比對與圖卡匯出體驗！
       </div>
 
       <div class="flex justify-end gap-2">
