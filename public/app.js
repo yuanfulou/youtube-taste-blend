@@ -2,7 +2,8 @@
  * YouTube Taste Blend - Client Application Engine & i18n
  */
 
-const MAX_SELECTABLE_CHANNELS = 100;
+const MAX_SELECTABLE_CHANNELS = 1000;
+const DIRECT_HASH_LIMIT = 100;
 const CHANNELS_PER_PAGE = 40;
 
 const EMOJI_AVATARS = ['🦊', '🐱', '🤖', '🚀', '🐼', '👾', '🦄', '🐯', '🥑', '⚡', '☕', '🎧', '🎮', '🛸', '🎯', '✨'];
@@ -32,7 +33,7 @@ const I18N = {
     hero_title_1: '看看你跟好友的 ',
     hero_title_highlight: 'YouTube 品味契合度',
     hero_title_2: ' 有多高？',
-    hero_desc: '授權或載入你的訂閱清單，勾選想公開的頻道。系統會透過 16-byte 二進位壓縮編碼進網址，後端完全不保存任何隱私紀錄。',
+    hero_desc: '授權或載入你的訂閱清單，勾選想公開的頻道。支援 100 以內純直鏈零儲存，或 1000+ 全量急速短碼分享！',
     manage_subs: '管理公開訂閱清單',
     manage_subs_desc: '可搜尋與取消勾選不想讓好友知道的私人/敏感頻道',
     btn_google_login: '登入 Google 同步',
@@ -44,19 +45,20 @@ const I18N = {
     filter_all: '全部',
     filter_indie: '✨ 僅小眾寶藏',
     selected_text: '已選擇',
-    max_limit_text: '(上限 100 個)',
-    select_all: '選取上限',
+    max_limit_text: '(上限 1000 個)',
+    select_all: '全選',
     deselect_all: '全取消',
     quick_presets: '快速預選：',
-    preset_recent_50: '⚡ 最新活躍前 50 個',
-    preset_recent_100: '⚡ 最新活躍前 100 個',
+    preset_recent_50: '⚡ 前 50 個',
+    preset_recent_100: '⚡ 前 100 個 (直鏈)',
+    preset_select_all_full: '🚀 全選全部 (短碼)',
     preset_indie_only: '✨ 僅小眾寶藏',
-    btn_generate_url: '生成專屬品味邀請連結 (#u1)',
+    btn_generate_url: '生成專屬品味邀請連結',
     receiver_badge: '收到品味挑戰！',
     receiver_title_suffix: ' 邀請你進行 YouTube 品味大對決！',
     receiver_desc: '匯入你的 YouTube 訂閱，看看你們的常看頻道重疊率有多高，誰才是彼此的終極推坑王！',
     receiver_config_title: '設定你的比對清單',
-    receiver_config_desc: '已成功載入好友的加密品味數據',
+    receiver_config_desc: '已成功載入好友的品味數據',
     btn_start_blend: '開始比對！揭曉契合度報告',
     stat_common: '共同訂閱',
     stat_a_only: 'A 獨有推坑',
@@ -86,7 +88,7 @@ const I18N = {
     card_qr_sub: '與 {name} 比對 YouTube 訂閱契合度',
     modal_share_title: '專屬品味邀請網址已產生！',
     modal_share_desc: '複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。',
-    modal_share_label: '專屬分享網址 (含 16-Byte Brotli Hash)：',
+    modal_share_label: '專屬分享網址：',
     btn_copy: '複製',
     copied_toast: '已複製連結至剪貼簿！',
     toast_generating: '專屬品味邀請連結已生成！',
@@ -96,7 +98,8 @@ const I18N = {
     toast_card_success: '圖卡已成功下載！',
     toast_preset_50: '已為您快速預選最新活躍前 {n} 個頻道！',
     toast_preset_indie: '已為您選取 {n} 個小眾寶藏頻道！',
-    limit_reached_toast: '⚠️ 已達到單次分享上限 (最多 100 個頻道)！如需新增請先取消勾選其他項目。',
+    toast_preset_all: '已全選全部 {n} 個頻道！將自動啟用大容量極速短碼模式。',
+    limit_reached_toast: '⚠️ 已達到單次分享上限 (最多 1000 個頻道)！',
     oauth_modal_title: 'Google OAuth 設定說明',
     oauth_modal_desc: '如欲使用真正的 Google 帳號授權同步訂閱，請完成以下 3 個簡單步驟：',
     oauth_step1: '1. 至 Google Cloud Console 啟用 YouTube Data API v3。',
@@ -115,7 +118,7 @@ const I18N = {
     hero_title_1: 'Discover Your ',
     hero_title_highlight: 'YouTube Taste Blend',
     hero_title_2: ' With Friends!',
-    hero_desc: 'Import your subscriptions and select public channels. Packed using 16-byte binary Brotli compression directly in the URL fragment with 0 server storage.',
+    hero_desc: 'Import your subscriptions and select public channels. Supports ≤100 direct zero-storage links, or 1000+ high-capacity shortcodes!',
     manage_subs: 'Manage Public Subscriptions',
     manage_subs_desc: 'Search and uncheck any private channels you prefer not to reveal',
     btn_google_login: 'Google Sync',
@@ -127,19 +130,20 @@ const I18N = {
     filter_all: 'All',
     filter_indie: '✨ Indie Gems Only',
     selected_text: 'Selected',
-    max_limit_text: '(Max 100)',
-    select_all: 'Select to Max',
+    max_limit_text: '(Max 1000)',
+    select_all: 'Select All',
     deselect_all: 'Deselect All',
     quick_presets: 'Quick Presets:',
-    preset_recent_50: '⚡ Top 50 Active',
-    preset_recent_100: '⚡ Top 100 Active',
+    preset_recent_50: '⚡ Top 50',
+    preset_recent_100: '⚡ Top 100 (Direct)',
+    preset_select_all_full: '🚀 Select All (Shortcode)',
     preset_indie_only: '✨ Indie Only',
-    btn_generate_url: 'Generate Taste Invite Link (#u1)',
+    btn_generate_url: 'Generate Taste Invite Link',
     receiver_badge: 'Taste Duel Challenge!',
     receiver_title_suffix: ' invited you to a Taste Blend Duel!',
     receiver_desc: 'Import your YouTube subscriptions to compare taste overlap and find out who has the best recommendations!',
     receiver_config_title: 'Configure Your Match List',
-    receiver_config_desc: "Successfully loaded your friend's encrypted taste data",
+    receiver_config_desc: "Successfully loaded your friend's taste data",
     btn_start_blend: 'Start Blend! Reveal Taste Report',
     stat_common: 'Common Subs',
     stat_a_only: "A's Unique",
@@ -169,7 +173,7 @@ const I18N = {
     card_qr_sub: 'Duel with {name} on YouTube taste radar',
     modal_share_title: 'Your Taste Invite Link is Ready!',
     modal_share_desc: 'Copy the link to your friend or let them scan the QR code to duel.',
-    modal_share_label: 'Custom Share Link (with 16-Byte Brotli Hash):',
+    modal_share_label: 'Custom Share Link:',
     btn_copy: 'Copy',
     copied_toast: 'Link copied to clipboard!',
     toast_generating: 'Taste invite link generated!',
@@ -179,7 +183,8 @@ const I18N = {
     toast_card_success: 'Story card downloaded successfully!',
     toast_preset_50: 'Pre-selected top {n} active channels!',
     toast_preset_indie: 'Selected {n} indie gem channels!',
-    limit_reached_toast: '⚠️ Maximum limit reached (100 channels)! Please uncheck others to add more.',
+    toast_preset_all: 'Selected all {n} channels! High-capacity shortcode mode activated.',
+    limit_reached_toast: '⚠️ Maximum limit reached (1000 channels)!',
     oauth_modal_title: 'Google OAuth Setup Guide',
     oauth_modal_desc: 'To sync real YouTube subscriptions with Google, follow these 3 simple steps:',
     oauth_step1: '1. Enable YouTube Data API v3 in Google Cloud Console.',
@@ -220,13 +225,15 @@ const AppState = {
     name: 'Alice',
     channels: [],
     selectedIds: new Set(),
-    payload: ''
+    payload: '',
+    shareUrl: ''
   },
   userB: {
     name: 'Bob',
     channels: [],
     selectedIds: new Set(),
-    payload: ''
+    payload: '',
+    shareUrl: ''
   },
   blendResult: null,
   activeFilterA: 'all',
@@ -380,8 +387,11 @@ async function initAuthAndSubscriptions() {
   const targetParam = urlParams.get('target');
   const hash = window.location.hash.substring(1);
   const hashParams = new URLSearchParams(hash);
+
   const u1Payload = hashParams.get('u1');
-  const u1Name = hashParams.get('name');
+  const shortId = hashParams.get('s');
+  const gistId = hashParams.get('g');
+  const inviterName = hashParams.get('name') || 'Friend';
 
   if (urlParams.get('oauth_help')) {
     openOAuthModal();
@@ -393,11 +403,37 @@ async function initAuthAndSubscriptions() {
     window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
   }
 
-  // Handle incoming invite link
+  // Handle incoming invite link (Direct Hash, Shortcode, or Gist)
   if (u1Payload) {
     AppState.userA.payload = u1Payload;
-    AppState.userA.name = u1Name || 'Friend';
+    AppState.userA.name = inviterName;
     setAppMode('receiver');
+  } else if (shortId) {
+    try {
+      const res = await fetch(`/api/shortcode/${shortId}`);
+      const data = await res.json();
+      if (data.success && data.payload) {
+        AppState.userA.payload = data.payload;
+        AppState.userA.name = data.name || inviterName;
+        setAppMode('receiver');
+      }
+    } catch (e) {
+      console.warn('Could not resolve shortcode', e);
+    }
+  } else if (gistId) {
+    try {
+      const res = await fetch(`https://api.github.com/gists/${gistId}`);
+      const gistData = await res.json();
+      const content = gistData.files?.['youtube-taste.json']?.content;
+      if (content) {
+        const parsed = JSON.parse(content);
+        AppState.userA.payload = parsed.payload;
+        AppState.userA.name = parsed.name || inviterName;
+        setAppMode('receiver');
+      }
+    } catch (e) {
+      console.warn('Could not resolve Gist', e);
+    }
   } else {
     setAppMode('creator');
   }
@@ -423,6 +459,7 @@ async function initAuthAndSubscriptions() {
           if (nameInput) nameInput.value = statusData.profileName;
         }
 
+        // Auto select top 50
         const initialSelected = subData.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
         user.selectedIds = new Set(initialSelected.map(c => c.id));
         
@@ -555,6 +592,7 @@ function renderChannelSelection(target = 'A') {
   const listEl = document.getElementById(target === 'A' ? 'channelsListA' : 'channelsListB');
   const countEl = document.getElementById(target === 'A' ? 'selectedCountA' : 'selectedCountB');
   const totalEl = document.getElementById(target === 'A' ? 'totalCountA' : 'totalCountB');
+  const modeBadge = document.getElementById(target === 'A' ? 'modeBadgeA' : 'modeBadgeB');
   const paginationEl = document.getElementById(target === 'A' ? 'paginationA' : 'paginationB');
   const query = target === 'A' ? AppState.searchQueryA.toLowerCase() : AppState.searchQueryB.toLowerCase();
   const filterCat = target === 'A' ? AppState.activeFilterA : AppState.activeFilterB;
@@ -572,10 +610,15 @@ function renderChannelSelection(target = 'A') {
   countEl.innerText = selectedCount;
   totalEl.innerText = user.channels.length;
 
-  if (selectedCount >= MAX_SELECTABLE_CHANNELS) {
-    countEl.classList.add('text-amber-400');
-  } else {
-    countEl.classList.remove('text-amber-400');
+  // Update mode badge
+  if (modeBadge) {
+    if (selectedCount <= DIRECT_HASH_LIMIT) {
+      modeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold';
+      modeBadge.innerText = '⚡ 100% 零儲存直鏈 (≤100)';
+    } else {
+      modeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-800 font-semibold';
+      modeBadge.innerText = `🚀 大容量短碼模式 (${selectedCount} 頻道)`;
+    }
   }
 
   if (filtered.length === 0) {
@@ -648,7 +691,7 @@ function renderChannelSelection(target = 'A') {
   }
 }
 
-// Toggle Channel Selection with MAX limit checking
+// Toggle Channel Selection
 function toggleChannelSelect(target, id) {
   const user = target === 'A' ? AppState.userA : AppState.userB;
   if (user.selectedIds.has(id)) {
@@ -693,9 +736,7 @@ function selectAllChannels(target, selectAll = true) {
     for (let i = 0; i < limit; i++) {
       user.selectedIds.add(user.channels[i].id);
     }
-    if (user.channels.length > MAX_SELECTABLE_CHANNELS) {
-      showToast(t('limit_reached_toast'), 'info');
-    }
+    showToast(t('toast_preset_all', { n: user.selectedIds.size }), 'info');
   } else {
     user.selectedIds.clear();
   }
@@ -749,7 +790,7 @@ async function renderQrCodeToImage(imgElementId, text, width = 160) {
   }
 }
 
-// Generate Share URL (User A)
+// Generate Share URL (User A) - Dual Engine
 async function generateShareUrl() {
   const name = document.getElementById('inputUserAName').value.trim() || 'Alice';
   AppState.userA.name = name;
@@ -771,8 +812,38 @@ async function generateShareUrl() {
 
     if (data.success) {
       AppState.userA.payload = data.payload;
-      const shareUrl = `${window.location.origin}/#u1=${data.payload}&name=${encodeURIComponent(name)}`;
-      
+      let shareUrl = '';
+      const modeBadge = document.getElementById('modalShareModeBadge');
+
+      if (selectedChannels.length <= DIRECT_HASH_LIMIT) {
+        // Mode 1: Direct 16-byte Brotli URL Hash
+        shareUrl = `${window.location.origin}/#u1=${data.payload}&name=${encodeURIComponent(name)}`;
+        if (modeBadge) {
+          modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800';
+          modeBadge.innerText = `⚡ 100% 零儲存直鏈模式 (${selectedChannels.length} 個頻道)`;
+        }
+      } else {
+        // Mode 2: Ephemeral Shortcode or Gist
+        const shortRes = await fetch('/api/shortcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payload: data.payload,
+            name,
+            channelsCount: selectedChannels.length
+          })
+        });
+        const shortData = await shortRes.json();
+        const paramKey = shortData.type === 'gist' ? 'g' : 's';
+        shareUrl = `${window.location.origin}/#${paramKey}=${shortData.shortcode}&name=${encodeURIComponent(name)}`;
+        
+        if (modeBadge) {
+          modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800';
+          modeBadge.innerText = `🚀 大容量極速短碼模式 (${selectedChannels.length} 個頻道 · 24h 暫存)`;
+        }
+      }
+
+      AppState.userA.shareUrl = shareUrl;
       document.getElementById('outputShareUrl').value = shareUrl;
       document.getElementById('modalShareLink').classList.remove('hidden');
 
@@ -787,7 +858,10 @@ async function generateShareUrl() {
 function testAsReceiverFromModal() {
   document.getElementById('modalShareLink').classList.add('hidden');
   setAppMode('receiver');
-  window.history.pushState({}, document.title, `/#u1=${AppState.userA.payload}&name=${encodeURIComponent(AppState.userA.name)}`);
+  if (AppState.userA.shareUrl) {
+    const hash = AppState.userA.shareUrl.split('#')[1] || `u1=${AppState.userA.payload}&name=${encodeURIComponent(AppState.userA.name)}`;
+    window.history.pushState({}, document.title, `/#${hash}`);
+  }
 }
 
 function copyToClipboard(elementId) {
@@ -910,7 +984,7 @@ async function renderBlendResultsView() {
     }
   }
 
-  // Generate User B's packed invite URL and render onto card QR image
+  // Generate User B's invite link & render QR Code onto Card
   try {
     const selectedChannelsB = AppState.userB.channels.filter(c => AppState.userB.selectedIds.has(c.id));
     if (selectedChannelsB.length > 0) {
@@ -923,7 +997,26 @@ async function renderBlendResultsView() {
       const packData = await packRes.json();
       if (packData.success) {
         AppState.userB.payload = packData.payload;
-        const duelShareUrl = `${window.location.origin}/#u1=${packData.payload}&name=${encodeURIComponent(nameB)}`;
+        let duelShareUrl = '';
+
+        if (selectedChannelsB.length <= DIRECT_HASH_LIMIT) {
+          duelShareUrl = `${window.location.origin}/#u1=${packData.payload}&name=${encodeURIComponent(nameB)}`;
+        } else {
+          const shortRes = await fetch('/api/shortcode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              payload: packData.payload,
+              name: nameB,
+              channelsCount: selectedChannelsB.length
+            })
+          });
+          const shortData = await shortRes.json();
+          const paramKey = shortData.type === 'gist' ? 'g' : 's';
+          duelShareUrl = `${window.location.origin}/#${paramKey}=${shortData.shortcode}&name=${encodeURIComponent(nameB)}`;
+        }
+
+        AppState.userB.shareUrl = duelShareUrl;
         await renderQrCodeToImage('cardQrImg', duelShareUrl, 120);
         const qrSubEl = document.getElementById('cardQrSubtext');
         if (qrSubEl) qrSubEl.innerText = t('card_qr_sub', { name: nameB });
@@ -1016,8 +1109,36 @@ async function shareAsUserB() {
 
     if (data.success) {
       AppState.userB.payload = data.payload;
-      const shareUrl = `${window.location.origin}/#u1=${data.payload}&name=${encodeURIComponent(AppState.userB.name)}`;
-      
+      let shareUrl = '';
+      const modeBadge = document.getElementById('modalShareModeBadge');
+
+      if (selectedChannelsB.length <= DIRECT_HASH_LIMIT) {
+        shareUrl = `${window.location.origin}/#u1=${data.payload}&name=${encodeURIComponent(AppState.userB.name)}`;
+        if (modeBadge) {
+          modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800';
+          modeBadge.innerText = `⚡ 100% 零儲存直鏈模式 (${selectedChannelsB.length} 個頻道)`;
+        }
+      } else {
+        const shortRes = await fetch('/api/shortcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            payload: data.payload,
+            name: AppState.userB.name,
+            channelsCount: selectedChannelsB.length
+          })
+        });
+        const shortData = await shortRes.json();
+        const paramKey = shortData.type === 'gist' ? 'g' : 's';
+        shareUrl = `${window.location.origin}/#${paramKey}=${shortData.shortcode}&name=${encodeURIComponent(AppState.userB.name)}`;
+        
+        if (modeBadge) {
+          modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800';
+          modeBadge.innerText = `🚀 大容量極速短碼模式 (${selectedChannelsB.length} 個頻道 · 24h 暫存)`;
+        }
+      }
+
+      AppState.userB.shareUrl = shareUrl;
       document.getElementById('outputShareUrl').value = shareUrl;
       document.getElementById('modalShareLink').classList.remove('hidden');
 

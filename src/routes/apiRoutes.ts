@@ -1,7 +1,28 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'node:crypto';
 import { packChannelIds, unpackChannelIds, getCompressionStats } from '../codec/channelCodec.js';
 import { YouTubeService } from '../services/youtubeService.js';
 import { calculateTasteBlend, ChannelItem } from '../services/tasteService.js';
+
+// In-memory 24h shortcode store
+interface EphemeralRecord {
+  payload: string;
+  name: string;
+  count: number;
+  createdAt: number;
+  expiresAt: number;
+}
+const ephemeralShortcodes = new Map<string, EphemeralRecord>();
+
+// Clean expired records every hour
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of ephemeralShortcodes.entries()) {
+    if (val.expiresAt < now) {
+      ephemeralShortcodes.delete(key);
+    }
+  }
+}, 3600 * 1000);
 
 export function createApiRouter(youtubeService: YouTubeService): Router {
   const router = Router();
@@ -173,7 +194,6 @@ export function createApiRouter(youtubeService: YouTubeService): Router {
     }
 
     try {
-      // Dynamic import to support ESM/CJS compatibility
       const QRCode = await import('qrcode');
       const dataUrl = await QRCode.default.toDataURL(text, {
         width,
@@ -191,6 +211,115 @@ export function createApiRouter(youtubeService: YouTubeService): Router {
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
+  });
+
+  /**
+   * POST /api/shortcode - Generates an ephemeral shortcode or GitHub Gist for high-capacity payloads
+   */
+  router.post('/shortcode', async (req: Request, res: Response) => {
+    const { payload, name, channelsCount } = req.body;
+
+    if (!payload || typeof payload !== 'string') {
+      return res.status(400).json({ error: 'payload string is required' });
+    }
+
+    const githubToken = process.env.GITHUB_TOKEN;
+    const userName = name || 'Anonymous';
+    const count = Number(channelsCount) || 0;
+
+    // 1. If GITHUB_TOKEN is available, create a public Gist
+    if (githubToken) {
+      try {
+        const gistResponse = await fetch('https://api.github.com/gists', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github+json',
+            'Content-Type': 'application/json',
+            'User-Agent': 'YouTube-Taste-Blend'
+          },
+          body: JSON.stringify({
+            description: `YouTube Taste Blend Taste Pack - ${userName} (${count} channels)`,
+            public: true,
+            files: {
+              'youtube-taste.json': {
+                content: JSON.stringify({
+                  app: 'youtube-taste-blend',
+                  version: '1.0.0',
+                  name: userName,
+                  count,
+                  payload,
+                  createdAt: new Date().toISOString()
+                })
+              }
+            }
+          })
+        });
+
+        if (gistResponse.ok) {
+          const gistData = (await gistResponse.json()) as { id: string; html_url: string };
+          return res.json({
+            success: true,
+            type: 'gist',
+            shortcode: gistData.id,
+            url: gistData.html_url
+          });
+        }
+      } catch (gistErr) {
+        console.warn('Failed to create GitHub Gist, falling back to local ephemeral cache:', gistErr);
+      }
+    }
+
+    // 2. Fallback to Local Ephemeral Cache (24-hour TTL)
+    const shortcode = crypto.randomBytes(4).toString('hex'); // 8 characters
+    const now = Date.now();
+    const ttlMs = 24 * 60 * 60 * 1000; // 24 hours
+
+    ephemeralShortcodes.set(shortcode, {
+      payload,
+      name: userName,
+      count,
+      createdAt: now,
+      expiresAt: now + ttlMs
+    });
+
+    res.json({
+      success: true,
+      type: 'local',
+      shortcode,
+      expiresAt: new Date(now + ttlMs).toISOString()
+    });
+  });
+
+  /**
+   * GET /api/shortcode/:id - Retrieves payload from local ephemeral store
+   */
+  router.get('/shortcode/:id', (req: Request, res: Response) => {
+    const id = String(req.params.id);
+    const record = ephemeralShortcodes.get(id);
+
+    if (!record) {
+      return res.status(404).json({
+        error: 'NOT_FOUND',
+        message: 'Shortcode not found or has expired (24h TTL).'
+      });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      ephemeralShortcodes.delete(id);
+      return res.status(410).json({
+        error: 'EXPIRED',
+        message: 'This taste invite link has expired after 24 hours.'
+      });
+    }
+
+    res.json({
+      success: true,
+      payload: record.payload,
+      name: record.name,
+      count: record.count,
+      createdAt: new Date(record.createdAt).toISOString()
+    });
   });
 
   return router;
