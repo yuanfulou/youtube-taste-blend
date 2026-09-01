@@ -69,6 +69,7 @@ const I18N = {
     copied_toast: '已複製連結至剪貼簿！',
     toast_generating: '專屬品味邀請連結已生成！',
     toast_loaded: '成功載入頻道！已自動預選最新活躍頻道。',
+    toast_real_loaded: '🎉 成功從 Google 同步您的真實 YouTube 訂閱頻道！',
     toast_blending: '正在比對你們的品味雷達...',
     toast_card_success: '圖卡已成功下載！',
     toast_preset_50: '已為您快速預選最新活躍前 {n} 個頻道！',
@@ -145,6 +146,7 @@ const I18N = {
     copied_toast: 'Link copied to clipboard!',
     toast_generating: 'Taste invite link generated!',
     toast_loaded: 'Channels loaded! Auto pre-selected recent active channels.',
+    toast_real_loaded: '🎉 Successfully synced real YouTube subscriptions from Google!',
     toast_blending: 'Analyzing your taste blend...',
     toast_card_success: 'Story card downloaded successfully!',
     toast_preset_50: 'Pre-selected top {n} active channels!',
@@ -162,6 +164,7 @@ const I18N = {
 const AppState = {
   lang: localStorage.getItem('taste_lang') || 'zh-TW',
   mode: 'creator', // 'creator' | 'receiver' | 'result'
+  isAuthenticated: false,
   userA: {
     name: 'Alice',
     channels: [],
@@ -222,12 +225,6 @@ function applyTranslations() {
   });
 
   document.getElementById('langToggleBtn').innerText = t('lang_name');
-
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('oauth_help')) {
-    openOAuthModal();
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
 }
 
 function openOAuthModal() {
@@ -309,7 +306,51 @@ function setAppMode(mode) {
   }
 }
 
-// Load Subscriptions (Real API or Mock)
+// Check auth status and auto-fetch real subscriptions if logged in
+async function initAuthAndSubscriptions() {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  if (urlParams.get('oauth_help')) {
+    openOAuthModal();
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  if (urlParams.get('auth_error')) {
+    showToast('Google OAuth 授權失敗: ' + urlParams.get('auth_error'), 'error');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  try {
+    const statusRes = await fetch('/auth/status');
+    const statusData = await statusRes.json();
+    AppState.isAuthenticated = statusData.authenticated;
+
+    if (AppState.isAuthenticated) {
+      // User is logged in! Fetch real subscriptions
+      const target = AppState.mode === 'receiver' ? 'B' : 'A';
+      const subRes = await fetch('/api/subscriptions');
+      const subData = await subRes.json();
+
+      if (subData.channels && subData.channels.length > 0) {
+        const user = target === 'A' ? AppState.userA : AppState.userB;
+        user.channels = subData.channels;
+        const initialSelected = subData.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
+        user.selectedIds = new Set(initialSelected.map(c => c.id));
+        renderChannelSelection(target);
+        showToast(t('toast_real_loaded'), 'success');
+        return;
+      }
+    }
+  } catch (e) {
+    console.error('Error checking auth', e);
+  }
+
+  // Fallback / initial preload with Mock data
+  loadSubscriptions('A', 'A');
+  loadSubscriptions('B', 'B');
+}
+
+// Load Subscriptions (Explicit Mock or fallback)
 async function loadSubscriptions(target = 'A', profile = 'A') {
   try {
     const res = await fetch(`/api/mock/subscriptions?profile=${profile}`);
@@ -711,9 +752,7 @@ window.addEventListener('DOMContentLoaded', () => {
   parseUrlHash();
   checkInviteSession();
   applyTranslations();
-
-  loadSubscriptions('A', 'A');
-  loadSubscriptions('B', 'B');
+  initAuthAndSubscriptions();
 
   const searchA = document.getElementById('searchChannelA');
   if (searchA) {

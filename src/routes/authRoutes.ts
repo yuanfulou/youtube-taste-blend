@@ -25,7 +25,6 @@ export function createAuthRouter(youtubeService: YouTubeService): Router {
     const returnTo = (req.query.returnTo as string) || '/';
     
     if (!youtubeService.getIsConfigured()) {
-      // Gracefully redirect to frontend with oauth_help param instead of showing raw error
       return res.redirect('/?oauth_help=1');
     }
 
@@ -64,7 +63,7 @@ export function createAuthRouter(youtubeService: YouTubeService): Router {
         });
       }
 
-      const returnUrl = (typeof state === 'string' && state.startsWith('/')) ? state : '/';
+      const returnUrl = (typeof state === 'string' && state.startsWith('/')) ? state : '/?logged_in=1';
       res.redirect(returnUrl);
     } catch (err: any) {
       res.redirect(`/?auth_error=${encodeURIComponent(err.message)}`);
