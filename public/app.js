@@ -688,10 +688,6 @@ function renderChannelSelection(target = 'A') {
     return matchesQuery && matchesCat;
   });
 
-  const selectedCount = user.selectedIds.size;
-  countEl.innerText = selectedCount;
-  totalEl.innerText = user.channels.length;
-
   // Update mode badge
   if (modeBadge) {
     if (selectedCount <= DIRECT_HASH_LIMIT) {
