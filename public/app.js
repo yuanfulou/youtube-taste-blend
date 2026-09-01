@@ -94,6 +94,10 @@ const I18N = {
     toast_generating: '專屬品味邀請連結已生成！',
     toast_loaded: '成功載入頻道！已自動預選最新活躍頻道。',
     toast_real_loaded: '🎉 成功從 Google 同步您的真實 YouTube 訂閱頻道！',
+    toast_empty_subs: '⚠️ 您的 YouTube 帳號目前無任何公開訂閱頻道。',
+    empty_subs_title: '目前沒有任何訂閱頻道 (0 頻道)',
+    empty_subs_desc: '您的 Google 帳號尚未訂閱任何頻道，或訂閱設定為不公開。您可以點擊下方按鈕載入示範資料進行體驗！',
+    btn_load_sample_hint: '一鍵載入示範頻道體驗',
     toast_blending: '正在比對你們的品味雷達...',
     toast_card_success: '圖卡已成功下載！',
     toast_preset_50: '已為您快速預選最新活躍前 {n} 個頻道！',
@@ -179,6 +183,10 @@ const I18N = {
     toast_generating: 'Taste invite link generated!',
     toast_loaded: 'Channels loaded! Auto pre-selected recent active channels.',
     toast_real_loaded: '🎉 Successfully synced real YouTube subscriptions from Google!',
+    toast_empty_subs: '⚠️ No public YouTube subscriptions found in your account.',
+    empty_subs_title: 'No Subscriptions Found (0 Channels)',
+    empty_subs_desc: 'Your Google account has no public channel subscriptions yet. You can click below to load sample channels to explore!',
+    btn_load_sample_hint: 'Load Sample Channels to Explore',
     toast_blending: 'Analyzing your taste blend...',
     toast_card_success: 'Story card downloaded successfully!',
     toast_preset_50: 'Pre-selected top {n} active channels!',
@@ -496,6 +504,32 @@ async function initAuthAndSubscriptions() {
 
         showToast(t('toast_real_loaded'), 'success');
         return;
+      } else {
+        // Logged in but user has 0 public subscriptions
+        const user = activeTarget === 'A' ? AppState.userA : AppState.userB;
+        user.channels = [];
+        user.selectedIds.clear();
+
+        if (statusData.profileName) {
+          user.name = statusData.profileName;
+          const nameInput = document.getElementById(activeTarget === 'A' ? 'inputUserAName' : 'inputUserBName');
+          if (nameInput) nameInput.value = statusData.profileName;
+        }
+
+        renderCategoryTabs(activeTarget);
+        renderChannelSelection(activeTarget);
+
+        if (activeTarget === 'A') {
+          await loadSubscriptions('B', 'B', false);
+        } else {
+          if (AppState.userA.channels.length === 0 && !AppState.userA.payload) {
+            await loadSubscriptions('A', 'A', false);
+          }
+          setAppMode('receiver');
+        }
+
+        showToast(t('toast_empty_subs'), 'warning');
+        return;
       }
     }
   } catch (e) {
@@ -616,6 +650,36 @@ function renderChannelSelection(target = 'A') {
   const filterCat = target === 'A' ? AppState.activeFilterA : AppState.activeFilterB;
 
   if (!listEl) return;
+
+  const selectedCount = user.selectedIds.size;
+  countEl.innerText = selectedCount;
+  totalEl.innerText = user.channels.length;
+
+  // Handle completely empty subscriptions (0 items)
+  if (user.channels.length === 0) {
+    listEl.innerHTML = `
+      <div class="col-span-full text-center py-10 px-4 bg-slate-900/60 rounded-2xl border border-slate-800/80 space-y-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mx-auto border border-amber-500/20">
+          <i class="fa-solid fa-folder-open"></i>
+        </div>
+        <div class="space-y-1">
+          <p class="font-bold text-xs text-slate-200">${t('empty_subs_title')}</p>
+          <p class="text-[11px] text-slate-400 max-w-sm mx-auto leading-relaxed">${t('empty_subs_desc')}</p>
+        </div>
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <button onclick="loadSubscriptions('${target}', '${target}', true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+            <i class="fa-solid fa-bolt"></i> <span>${t('btn_load_sample_hint')}</span>
+          </button>
+        </div>
+      </div>
+    `;
+    if (modeBadge) {
+      modeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800 font-semibold';
+      modeBadge.innerText = '0 頻道';
+    }
+    if (paginationEl) paginationEl.innerHTML = '';
+    return;
+  }
 
   const filtered = user.channels.filter(c => {
     const cat = c.category || '綜合';
