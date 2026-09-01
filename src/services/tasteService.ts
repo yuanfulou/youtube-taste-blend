@@ -8,6 +8,8 @@ export interface ChannelItem {
   subscriberCount?: number;
   isIndie?: boolean; // Subscriber count < 100k
   category?: string;
+  lastActive?: string; // e.g. "本週更新", "3天前", "持續活躍"
+  lastActiveDaysAgo?: number; // For sorting by recent activity
 }
 
 export interface TasteBlendResult {

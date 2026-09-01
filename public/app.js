@@ -2,6 +2,8 @@
  * YouTube Taste Blend - Client Application Engine & i18n
  */
 
+const MAX_SELECTABLE_CHANNELS = 100;
+
 const I18N = {
   'zh-TW': {
     brand_title: 'YouTube Taste Blend',
@@ -27,8 +29,13 @@ const I18N = {
     filter_science: '科普',
     filter_dev: '程式開發',
     selected_text: '已選擇',
-    select_all: '全選',
+    max_limit_text: '(上限 100 個)',
+    select_all: '選取上限',
     deselect_all: '全取消',
+    quick_presets: '快速預選：',
+    preset_recent_50: '⚡ 最新活躍前 50 個',
+    preset_recent_100: '⚡ 最新活躍前 100 個',
+    preset_indie_only: '✨ 僅小眾寶藏',
     btn_generate_url: '生成專屬品味邀請連結 (#u1)',
     receiver_badge: '收到品味挑戰！',
     receiver_title_suffix: ' 邀請你進行 YouTube 品味大對決！',
@@ -56,9 +63,10 @@ const I18N = {
     btn_copy: '複製',
     copied_toast: '已複製連結至剪貼簿！',
     toast_generating: '專屬品味邀請連結已生成！',
-    toast_loaded: '成功載入頻道！',
+    toast_loaded: '成功載入頻道！已自動預選最新活躍頻道。',
     toast_blending: '正在比對你們的品味雷達...',
     toast_card_success: '圖卡已成功下載！',
+    limit_reached_toast: '⚠️ 已達到單次分享上限 (最多 100 個頻道)！如需新增請先取消勾選其他項目。',
     oauth_modal_title: 'Google OAuth 設定說明',
     oauth_modal_desc: '如欲使用真正的 Google 帳號授權同步訂閱，請完成以下 3 個簡單步驟：',
     oauth_step1: '1. 至 Google Cloud Console 啟用 YouTube Data API v3。',
@@ -90,8 +98,13 @@ const I18N = {
     filter_science: 'Science',
     filter_dev: 'Dev',
     selected_text: 'Selected',
-    select_all: 'Select All',
+    max_limit_text: '(Max 100)',
+    select_all: 'Select to Max',
     deselect_all: 'Deselect All',
+    quick_presets: 'Quick Presets:',
+    preset_recent_50: '⚡ Top 50 Active',
+    preset_recent_100: '⚡ Top 100 Active',
+    preset_indie_only: '✨ Indie Only',
     btn_generate_url: 'Generate Taste Invite Link (#u1)',
     receiver_badge: 'Taste Duel Challenge!',
     receiver_title_suffix: ' invited you to a Taste Blend Duel!',
@@ -119,9 +132,10 @@ const I18N = {
     btn_copy: 'Copy',
     copied_toast: 'Link copied to clipboard!',
     toast_generating: 'Taste invite link generated!',
-    toast_loaded: 'Channels loaded successfully!',
+    toast_loaded: 'Channels loaded! Auto pre-selected recent active channels.',
     toast_blending: 'Analyzing your taste blend...',
     toast_card_success: 'Story card downloaded successfully!',
+    limit_reached_toast: '⚠️ Maximum limit reached (100 channels)! Please uncheck others to add more.',
     oauth_modal_title: 'Google OAuth Setup Guide',
     oauth_modal_desc: 'To sync real YouTube subscriptions with Google, follow these 3 simple steps:',
     oauth_step1: '1. Enable YouTube Data API v3 in Google Cloud Console.',
@@ -183,7 +197,6 @@ function applyTranslations() {
 
   document.getElementById('langToggleBtn').innerText = t('lang_name');
 
-  // Check URL params for OAuth help modal
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('oauth_help')) {
     openOAuthModal();
@@ -211,7 +224,7 @@ function showToast(message, type = 'info') {
   };
 
   toast.className = `px-4 py-3 rounded-xl shadow-2xl border text-xs font-semibold flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0 ${bgColors[type] || bgColors.info}`;
-  toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-400' : type === 'error' ? 'fa-triangle-exclamation text-rose-400' : 'fa-circle-info text-indigo-400'}"></i> <span>${message}</span>`;
+  toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-400' : type === 'warning' ? 'fa-triangle-exclamation text-amber-400' : type === 'error' ? 'fa-circle-xmark text-rose-400' : 'fa-circle-info text-indigo-400'}"></i> <span>${message}</span>`;
 
   toastContainer.appendChild(toast);
   requestAnimationFrame(() => {
@@ -221,7 +234,7 @@ function showToast(message, type = 'info') {
   setTimeout(() => {
     toast.classList.add('opacity-0', '-translate-y-2');
     setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  }, 3200);
 }
 
 // Check URL Hash on boot
@@ -239,7 +252,6 @@ function parseUrlHash() {
   }
 }
 
-// Check saved invitation in sessionStorage
 function checkInviteSession() {
   const savedPayload = sessionStorage.getItem('taste_invite_u1');
   const savedName = sessionStorage.getItem('taste_invite_name');
@@ -253,7 +265,6 @@ function checkInviteSession() {
   }
 }
 
-// Switch Application View Modes
 function setAppMode(mode) {
   AppState.mode = mode;
   document.getElementById('viewCreator').classList.add('hidden');
@@ -278,15 +289,14 @@ async function loadSubscriptions(target = 'A', profile = 'A') {
     const res = await fetch(`/api/mock/subscriptions?profile=${profile}`);
     const data = await res.json();
     
-    if (target === 'A') {
-      AppState.userA.channels = data.channels;
-      AppState.userA.selectedIds = new Set(data.channels.map(c => c.id));
-      renderChannelSelection('A');
-    } else {
-      AppState.userB.channels = data.channels;
-      AppState.userB.selectedIds = new Set(data.channels.map(c => c.id));
-      renderChannelSelection('B');
-    }
+    const user = target === 'A' ? AppState.userA : AppState.userB;
+    user.channels = data.channels;
+    
+    // Automatically pre-select top 50 (or max limit) active channels
+    const initialSelected = data.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
+    user.selectedIds = new Set(initialSelected.map(c => c.id));
+    
+    renderChannelSelection(target);
     showToast(t('toast_loaded'), 'success');
   } catch (err) {
     showToast('Failed to load: ' + err.message, 'error');
@@ -310,11 +320,18 @@ function renderChannelSelection(target = 'A') {
     return matchesQuery && matchesCat;
   });
 
-  countEl.innerText = user.selectedIds.size;
+  const selectedCount = user.selectedIds.size;
+  countEl.innerText = selectedCount;
   totalEl.innerText = user.channels.length;
 
+  if (selectedCount >= MAX_SELECTABLE_CHANNELS) {
+    countEl.classList.add('text-amber-400');
+  } else {
+    countEl.classList.remove('text-amber-400');
+  }
+
   if (filtered.length === 0) {
-    listEl.innerHTML = `<div class="text-center py-12 text-slate-500 text-xs"><i class="fa-solid fa-filter-circle-xmark text-lg mb-2 block"></i>No channels match filter</div>`;
+    listEl.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs"><i class="fa-solid fa-filter-circle-xmark text-lg mb-2 block"></i>No channels match filter</div>`;
     return;
   }
 
@@ -327,6 +344,7 @@ function renderChannelSelection(target = 'A') {
           <div class="truncate">
             <p class="font-bold text-xs text-slate-200 truncate">${c.title}</p>
             <div class="flex items-center gap-2 mt-0.5">
+              ${c.lastActive ? `<span class="text-[10px] text-emerald-400 font-medium">${c.lastActive}</span>` : ''}
               ${c.subscriberCount ? `<span class="text-[10px] text-slate-400">${formatSubscriberCount(c.subscriberCount)} ${t('subs_count')}</span>` : ''}
               ${c.isIndie ? `<span class="px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 text-[10px] border border-amber-800/80">${t('indie_tag')}</span>` : ''}
             </div>
@@ -340,20 +358,54 @@ function renderChannelSelection(target = 'A') {
   }).join('');
 }
 
+// Toggle Channel Selection with MAX limit checking
 function toggleChannelSelect(target, id) {
   const user = target === 'A' ? AppState.userA : AppState.userB;
   if (user.selectedIds.has(id)) {
     user.selectedIds.delete(id);
   } else {
+    if (user.selectedIds.size >= MAX_SELECTABLE_CHANNELS) {
+      showToast(t('limit_reached_toast'), 'warning');
+      return;
+    }
     user.selectedIds.add(id);
   }
   renderChannelSelection(target);
 }
 
+// Quick pre-select top N active channels
+function selectTopActive(target, count = 50) {
+  const user = target === 'A' ? AppState.userA : AppState.userB;
+  user.selectedIds.clear();
+  const limit = Math.min(count, MAX_SELECTABLE_CHANNELS, user.channels.length);
+  for (let i = 0; i < limit; i++) {
+    user.selectedIds.add(user.channels[i].id);
+  }
+  renderChannelSelection(target);
+  showToast(`已為您快速預選最新活躍前 ${user.selectedIds.size} 個頻道！`, 'info');
+}
+
+// Select only Indie gems
+function selectIndieOnly(target) {
+  const user = target === 'A' ? AppState.userA : AppState.userB;
+  user.selectedIds.clear();
+  const indieList = user.channels.filter(c => c.isIndie).slice(0, MAX_SELECTABLE_CHANNELS);
+  indieList.forEach(c => user.selectedIds.add(c.id));
+  renderChannelSelection(target);
+  showToast(`已為您選取 ${user.selectedIds.size} 個小眾寶藏頻道！`, 'info');
+}
+
 function selectAllChannels(target, selectAll = true) {
   const user = target === 'A' ? AppState.userA : AppState.userB;
   if (selectAll) {
-    user.selectedIds = new Set(user.channels.map(c => c.id));
+    user.selectedIds.clear();
+    const limit = Math.min(MAX_SELECTABLE_CHANNELS, user.channels.length);
+    for (let i = 0; i < limit; i++) {
+      user.selectedIds.add(user.channels[i].id);
+    }
+    if (user.channels.length > MAX_SELECTABLE_CHANNELS) {
+      showToast(`已選取至上限 ${MAX_SELECTABLE_CHANNELS} 個頻道`, 'info');
+    }
   } else {
     user.selectedIds.clear();
   }
@@ -419,7 +471,6 @@ async function generateShareUrl() {
   }
 }
 
-// Copy Share URL
 function copyToClipboard(elementId) {
   const input = document.getElementById(elementId);
   input.select();
@@ -462,7 +513,6 @@ async function runBlendWithUserA() {
       renderBlendResultsView();
       setAppMode('result');
 
-      // Launch celebration confetti
       if (window.confetti) {
         confetti({
           particleCount: 80,
@@ -476,7 +526,6 @@ async function runBlendWithUserA() {
   }
 }
 
-// Render Results View
 function renderBlendResultsView() {
   const res = AppState.blendResult;
   if (!res) return;
@@ -502,7 +551,6 @@ function renderBlendResultsView() {
   switchResultTab('common');
 }
 
-// Switch result categories tab
 function switchResultTab(tabKey) {
   AppState.activeResultTab = tabKey;
   const res = AppState.blendResult;
@@ -561,7 +609,6 @@ function switchResultTab(tabKey) {
   `).join('');
 }
 
-// User B re-shares their own profile as a fresh invitation
 async function shareAsUserB() {
   const selectedChannelsB = AppState.userB.channels.filter(c => AppState.userB.selectedIds.has(c.id));
   if (selectedChannelsB.length === 0) {
@@ -584,7 +631,6 @@ async function shareAsUserB() {
       document.getElementById('outputShareUrl').value = shareUrl;
       document.getElementById('modalShareLink').classList.remove('hidden');
 
-      // Refresh QR
       const qrContainer = document.getElementById('qrcodeContainer');
       qrContainer.innerHTML = '';
       if (window.QRCode) {
@@ -604,7 +650,6 @@ async function shareAsUserB() {
   }
 }
 
-// Export IG Story / Card Image
 async function exportTasteCard() {
   const cardElement = document.getElementById('tasteShareCardPreview');
   if (!cardElement) return;
@@ -640,11 +685,9 @@ window.addEventListener('DOMContentLoaded', () => {
   checkInviteSession();
   applyTranslations();
 
-  // Preload Mock A for Creator mode convenience
   loadSubscriptions('A', 'A');
   loadSubscriptions('B', 'B');
 
-  // Search input listeners
   const searchA = document.getElementById('searchChannelA');
   if (searchA) {
     searchA.addEventListener('input', (e) => {

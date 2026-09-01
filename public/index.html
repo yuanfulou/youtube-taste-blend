@@ -120,7 +120,22 @@
           </div>
         </div>
 
-        <!-- Category Badges & Bulk Select -->
+        <!-- Quick Presets Bar (NEW) -->
+        <div class="flex items-center justify-between flex-wrap gap-2 p-2.5 bg-slate-900/80 rounded-2xl border border-slate-800/80 text-xs">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-slate-400 font-semibold text-[11px]" data-i18n="quick_presets">快速預選：</span>
+            <button onclick="selectTopActive('A', 50)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_recent_50">⚡ 最新活躍前 50 個</button>
+            <button onclick="selectTopActive('A', 100)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_recent_100">⚡ 最新活躍前 100 個</button>
+            <button onclick="selectIndieOnly('A')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_indie_only">✨ 僅小眾寶藏</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="selectAllChannels('A', true)" class="text-[11px] text-slate-400 hover:text-slate-200" data-i18n="select_all">選取上限</button>
+            <span class="text-slate-600">|</span>
+            <button onclick="selectAllChannels('A', false)" class="text-[11px] text-slate-400 hover:text-rose-400" data-i18n="deselect_all">全取消</button>
+          </div>
+        </div>
+
+        <!-- Category Badges & Counter -->
         <div class="flex items-center justify-between flex-wrap gap-2 pt-1">
           <div class="flex items-center gap-1.5 overflow-x-auto text-xs py-1">
             <button onclick="AppState.activeFilterA='all'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-rose-950 text-rose-300 font-bold border border-rose-800 text-[11px]" data-i18n="filter_all">全部</button>
@@ -129,11 +144,8 @@
             <button onclick="AppState.activeFilterA='Science'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]" data-i18n="filter_science">科普</button>
             <button onclick="AppState.activeFilterA='Dev'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]" data-i18n="filter_dev">程式開發</button>
           </div>
-          <div class="flex items-center gap-2 text-xs">
-            <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountA" class="text-rose-400 font-bold">0</span> / <span id="totalCountA">0</span></span>
-            <button onclick="selectAllChannels('A', true)" class="text-[11px] text-slate-400 hover:text-slate-200" data-i18n="select_all">全選</button>
-            <span class="text-slate-600">|</span>
-            <button onclick="selectAllChannels('A', false)" class="text-[11px] text-slate-400 hover:text-rose-400" data-i18n="deselect_all">全取消</button>
+          <div class="text-xs">
+            <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountA" class="text-rose-400 font-bold text-xs">0</span> / <span id="totalCountA">0</span> <span class="text-slate-500" data-i18n="max_limit_text">(上限 100 個)</span></span>
           </div>
         </div>
 
@@ -205,13 +217,23 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between text-xs pt-1">
-          <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountB" class="text-purple-400 font-bold">0</span> / <span id="totalCountB">0</span></span>
+        <!-- Quick Presets for B -->
+        <div class="flex items-center justify-between flex-wrap gap-2 p-2.5 bg-slate-900/80 rounded-2xl border border-slate-800/80 text-xs">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-slate-400 font-semibold text-[11px]" data-i18n="quick_presets">快速預選：</span>
+            <button onclick="selectTopActive('B', 50)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_recent_50">⚡ 最新活躍前 50 個</button>
+            <button onclick="selectTopActive('B', 100)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_recent_100">⚡ 最新活躍前 100 個</button>
+            <button onclick="selectIndieOnly('B')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_indie_only">✨ 僅小眾寶藏</button>
+          </div>
           <div class="flex items-center gap-2">
-            <button onclick="selectAllChannels('B', true)" class="text-[11px] text-slate-400 hover:text-slate-200" data-i18n="select_all">全選</button>
+            <button onclick="selectAllChannels('B', true)" class="text-[11px] text-slate-400 hover:text-slate-200" data-i18n="select_all">選取上限</button>
             <span class="text-slate-600">|</span>
             <button onclick="selectAllChannels('B', false)" class="text-[11px] text-slate-400 hover:text-rose-400" data-i18n="deselect_all">全取消</button>
           </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs pt-1">
+          <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountB" class="text-purple-400 font-bold text-xs">0</span> / <span id="totalCountB">0</span> <span class="text-slate-500" data-i18n="max_limit_text">(上限 100 個)</span></span>
         </div>
 
         <div id="channelsListB" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pr-1">
