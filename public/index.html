@@ -135,16 +135,12 @@
           </div>
         </div>
 
-        <!-- Category Badges & Counter -->
-        <div class="flex items-center justify-between flex-wrap gap-2 pt-1">
-          <div class="flex items-center gap-1.5 overflow-x-auto text-xs py-1">
-            <button onclick="AppState.activeFilterA='all'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-rose-950 text-rose-300 font-bold border border-rose-800 text-[11px]" data-i18n="filter_all">全部</button>
-            <button onclick="AppState.activeFilterA='indie'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800 text-[11px]" data-i18n="filter_indie">✨ 僅小眾寶藏</button>
-            <button onclick="AppState.activeFilterA='Tech'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]" data-i18n="filter_tech">科技</button>
-            <button onclick="AppState.activeFilterA='Science'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]" data-i18n="filter_science">科普</button>
-            <button onclick="AppState.activeFilterA='Dev'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]" data-i18n="filter_dev">程式開發</button>
+        <!-- Dynamic Category Badges & Counter -->
+        <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-800/60 pt-3">
+          <div id="categoryTabsA" class="flex items-center gap-1.5 overflow-x-auto text-xs py-1 max-w-full">
+            <!-- Dynamically populated categories -->
           </div>
-          <div class="text-xs">
+          <div class="text-xs flex-shrink-0">
             <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountA" class="text-rose-400 font-bold text-xs">0</span> / <span id="totalCountA">0</span> <span class="text-slate-500" data-i18n="max_limit_text">(上限 100 個)</span></span>
           </div>
         </div>
@@ -232,8 +228,14 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-between text-xs pt-1">
-          <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountB" class="text-purple-400 font-bold text-xs">0</span> / <span id="totalCountB">0</span> <span class="text-slate-500" data-i18n="max_limit_text">(上限 100 個)</span></span>
+        <!-- Dynamic Category Badges for B -->
+        <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-800/60 pt-3">
+          <div id="categoryTabsB" class="flex items-center gap-1.5 overflow-x-auto text-xs py-1 max-w-full">
+            <!-- Dynamically populated categories -->
+          </div>
+          <div class="text-xs flex-shrink-0">
+            <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountB" class="text-purple-400 font-bold text-xs">0</span> / <span id="totalCountB">0</span> <span class="text-slate-500" data-i18n="max_limit_text">(上限 100 個)</span></span>
+          </div>
         </div>
 
         <div id="channelsListB" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pr-1">

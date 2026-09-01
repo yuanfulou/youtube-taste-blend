@@ -25,9 +25,6 @@ const I18N = {
     search_placeholder: '輸入關鍵字篩選...',
     filter_all: '全部',
     filter_indie: '✨ 僅小眾寶藏',
-    filter_tech: '科技',
-    filter_science: '科普',
-    filter_dev: '程式開發',
     selected_text: '已選擇',
     max_limit_text: '(上限 100 個)',
     select_all: '選取上限',
@@ -102,9 +99,6 @@ const I18N = {
     search_placeholder: 'Filter by keywords...',
     filter_all: 'All',
     filter_indie: '✨ Indie Gems Only',
-    filter_tech: 'Tech',
-    filter_science: 'Science',
-    filter_dev: 'Dev',
     selected_text: 'Selected',
     max_limit_text: '(Max 100)',
     select_all: 'Select to Max',
@@ -161,6 +155,27 @@ const I18N = {
   }
 };
 
+const CATEGORY_TRANSLATIONS = {
+  '科技': { zh: '科技', en: 'Tech' },
+  '程式開發': { zh: '程式開發', en: 'Dev' },
+  '科普': { zh: '科普', en: 'Science' },
+  '知識': { zh: '知識', en: 'Knowledge' },
+  '時事社會': { zh: '時事社會', en: 'Society' },
+  '時事政經': { zh: '時事政經', en: 'Politics' },
+  '商業理財': { zh: '商業理財', en: 'Finance' },
+  '遊戲': { zh: '遊戲', en: 'Gaming' },
+  '娛樂': { zh: '娛樂', en: 'Entertainment' },
+  '影視娛樂': { zh: '影視娛樂', en: 'Film/TV' },
+  '音樂': { zh: '音樂', en: 'Music' },
+  '生活風格': { zh: '生活風格', en: 'Lifestyle' },
+  '美食料理': { zh: '美食料理', en: 'Food' },
+  '運動健身': { zh: '運動健身', en: 'Sports' },
+  '手作興趣': { zh: '手作興趣', en: 'Hobby' },
+  '動漫': { zh: '動漫', en: 'Anime' },
+  '汽機車': { zh: '汽機車', en: 'Auto' },
+  '綜合': { zh: '綜合', en: 'General' }
+};
+
 const AppState = {
   lang: localStorage.getItem('taste_lang') || 'zh-TW',
   mode: 'creator', // 'creator' | 'receiver' | 'result'
@@ -194,6 +209,14 @@ function t(key, vars = {}) {
   return text;
 }
 
+function getCategoryDisplayName(catKey) {
+  const isEn = AppState.lang === 'en-US';
+  if (CATEGORY_TRANSLATIONS[catKey]) {
+    return isEn ? CATEGORY_TRANSLATIONS[catKey].en : CATEGORY_TRANSLATIONS[catKey].zh;
+  }
+  return catKey;
+}
+
 function formatLastActive(daysAgo) {
   if (daysAgo === 0) return t('updated_today');
   if (daysAgo === 1) return t('updated_yesterday');
@@ -206,6 +229,8 @@ function toggleLanguage() {
   AppState.lang = AppState.lang === 'zh-TW' ? 'en-US' : 'zh-TW';
   localStorage.setItem('taste_lang', AppState.lang);
   applyTranslations();
+  renderCategoryTabs('A');
+  renderCategoryTabs('B');
   renderChannelSelection('A');
   renderChannelSelection('B');
   if (AppState.blendResult) {
@@ -326,7 +351,6 @@ async function initAuthAndSubscriptions() {
     AppState.isAuthenticated = statusData.authenticated;
 
     if (AppState.isAuthenticated) {
-      // User is logged in! Fetch real subscriptions
       const target = AppState.mode === 'receiver' ? 'B' : 'A';
       const subRes = await fetch('/api/subscriptions');
       const subData = await subRes.json();
@@ -336,6 +360,7 @@ async function initAuthAndSubscriptions() {
         user.channels = subData.channels;
         const initialSelected = subData.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
         user.selectedIds = new Set(initialSelected.map(c => c.id));
+        renderCategoryTabs(target);
         renderChannelSelection(target);
         showToast(t('toast_real_loaded'), 'success');
         return;
@@ -345,7 +370,6 @@ async function initAuthAndSubscriptions() {
     console.error('Error checking auth', e);
   }
 
-  // Fallback / initial preload with Mock data
   loadSubscriptions('A', 'A');
   loadSubscriptions('B', 'B');
 }
@@ -359,15 +383,77 @@ async function loadSubscriptions(target = 'A', profile = 'A') {
     const user = target === 'A' ? AppState.userA : AppState.userB;
     user.channels = data.channels;
     
-    // Automatically pre-select top 50 (or max limit) active channels
     const initialSelected = data.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
     user.selectedIds = new Set(initialSelected.map(c => c.id));
     
+    renderCategoryTabs(target);
     renderChannelSelection(target);
     showToast(t('toast_loaded'), 'success');
   } catch (err) {
     showToast('Failed to load: ' + err.message, 'error');
   }
+}
+
+// Dynamically Render Category Filter Tabs based on currently loaded channels
+function renderCategoryTabs(target = 'A') {
+  const user = target === 'A' ? AppState.userA : AppState.userB;
+  const tabsContainer = document.getElementById(target === 'A' ? 'categoryTabsA' : 'categoryTabsB');
+  const activeFilter = target === 'A' ? AppState.activeFilterA : AppState.activeFilterB;
+
+  if (!tabsContainer) return;
+
+  // Count channels per category
+  const categoryCounts = {};
+  let indieCount = 0;
+
+  user.channels.forEach(c => {
+    const cat = c.category || '綜合';
+    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    if (c.isIndie) indieCount++;
+  });
+
+  const categories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
+
+  let html = `
+    <button onclick="setCategoryFilter('${target}', 'all')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 ${activeFilter === 'all' ? 'bg-rose-600 text-white shadow-lg' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'}">
+      <span>${t('filter_all')}</span>
+      <span class="text-[10px] px-1.5 py-0.2 rounded-full ${activeFilter === 'all' ? 'bg-rose-950 text-rose-200' : 'bg-slate-800 text-slate-400'}">${user.channels.length}</span>
+    </button>
+  `;
+
+  if (indieCount > 0) {
+    html += `
+      <button onclick="setCategoryFilter('${target}', 'indie')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 ${activeFilter === 'indie' ? 'bg-amber-600 text-white shadow-lg' : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800'}">
+        <span>${t('filter_indie')}</span>
+        <span class="text-[10px] px-1.5 py-0.2 rounded-full ${activeFilter === 'indie' ? 'bg-amber-950 text-amber-200' : 'bg-slate-800 text-amber-400'}">${indieCount}</span>
+      </button>
+    `;
+  }
+
+  categories.forEach(cat => {
+    const count = categoryCounts[cat];
+    const isSelected = activeFilter === cat;
+    const displayName = getCategoryDisplayName(cat);
+
+    html += `
+      <button onclick="setCategoryFilter('${target}', '${cat}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 ${isSelected ? 'bg-rose-600 text-white shadow-lg' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'}">
+        <span>${displayName}</span>
+        <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-rose-950 text-rose-200' : 'bg-slate-800 text-slate-400'}">${count}</span>
+      </button>
+    `;
+  });
+
+  tabsContainer.innerHTML = html;
+}
+
+function setCategoryFilter(target, catKey) {
+  if (target === 'A') {
+    AppState.activeFilterA = catKey;
+  } else {
+    AppState.activeFilterB = catKey;
+  }
+  renderCategoryTabs(target);
+  renderChannelSelection(target);
 }
 
 // Render Channel Selection List
@@ -382,8 +468,9 @@ function renderChannelSelection(target = 'A') {
   if (!listEl) return;
 
   const filtered = user.channels.filter(c => {
-    const matchesQuery = c.title.toLowerCase().includes(query) || (c.category && c.category.toLowerCase().includes(query));
-    const matchesCat = filterCat === 'all' || (filterCat === 'indie' && c.isIndie) || c.category === filterCat;
+    const cat = c.category || '綜合';
+    const matchesQuery = c.title.toLowerCase().includes(query) || cat.toLowerCase().includes(query);
+    const matchesCat = filterCat === 'all' || (filterCat === 'indie' && c.isIndie) || cat === filterCat;
     return matchesQuery && matchesCat;
   });
 
@@ -398,13 +485,15 @@ function renderChannelSelection(target = 'A') {
   }
 
   if (filtered.length === 0) {
-    listEl.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs"><i class="fa-solid fa-filter-circle-xmark text-lg mb-2 block"></i>No channels match filter</div>`;
+    listEl.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs"><i class="fa-solid fa-filter-circle-xmark text-lg mb-2 block"></i>無符合篩選條件的頻道 (No channels match filter)</div>`;
     return;
   }
 
   listEl.innerHTML = filtered.map(c => {
     const isChecked = user.selectedIds.has(c.id);
     const activeText = formatLastActive(c.lastActiveDaysAgo ?? 14);
+    const cat = c.category || '綜合';
+    const displayCategory = getCategoryDisplayName(cat);
 
     return `
       <div class="flex items-center justify-between p-3 rounded-xl ${isChecked ? 'bg-slate-800/90 border-slate-700' : 'bg-slate-900/40 border-slate-800/60 opacity-60'} border hover:border-slate-600 transition cursor-pointer" onclick="toggleChannelSelect('${target}', '${c.id}')">
@@ -420,7 +509,7 @@ function renderChannelSelection(target = 'A') {
           </div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">${c.category || 'YouTube'}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">${displayCategory}</span>
         </div>
       </div>
     `;
@@ -668,7 +757,7 @@ function switchResultTab(tabKey) {
         ${c.isIndie ? `<span class="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 text-[10px] border border-amber-800 flex-shrink-0">${t('indie_tag')}</span>` : ''}
       </div>
       <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800/80">
-        <span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800">${c.category || 'YouTube'}</span>
+        <span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800">${getCategoryDisplayName(c.category || '綜合')}</span>
         <a href="https://www.youtube.com/channel/${c.id}" target="_blank" rel="noopener noreferrer" class="text-rose-400 hover:text-rose-300 flex items-center gap-1 text-[11px] font-semibold">
           ${t('btn_visit_channel')} <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
         </a>
