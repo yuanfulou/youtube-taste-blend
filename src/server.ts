@@ -43,12 +43,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Start Server
+// Start Server on 0.0.0.0 (Allowing Tailscale & LAN connections)
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(config.port, () => {
-    console.log(`\n🚀 YouTube Taste Blend Server running at http://localhost:${config.port}`);
-    console.log(`📡 Google OAuth status: ${youtubeService.getIsConfigured() ? '✅ Configured' : '⚠️ Unconfigured (Mock Mode Available)'}`);
-    console.log(`🧪 Interactive test dashboard available at http://localhost:${config.port}\n`);
+  const HOST = '0.0.0.0';
+  app.listen(config.port, HOST, () => {
+    console.log(`\n🚀 YouTube Taste Blend Server running:`);
+    console.log(`   - Local:      http://localhost:${config.port}`);
+    console.log(`   - Tailscale:  http://100.127.138.61:${config.port}`);
+    console.log(`   - LAN:        http://192.168.31.186:${config.port}`);
+    console.log(`📡 Google OAuth: ${youtubeService.getIsConfigured() ? '✅ Configured' : '⚠️ Unconfigured (Mock Mode Available)'}\n`);
   });
 }
 
