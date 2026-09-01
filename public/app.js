@@ -701,21 +701,23 @@ async function runBlendWithUserA() {
   showToast(t('toast_blending'), 'info');
 
   try {
-    // If User A has no payload but has channels, blend directly
-    const bodyPayload = {
-      userA: AppState.userA.payload 
-        ? { name: AppState.userA.name, payload: AppState.userA.payload }
-        : { name: AppState.userA.name, channels: AppState.userA.channels.filter(c => AppState.userA.selectedIds.has(c.id)) },
-      userB: {
-        name: nameB,
-        channels: selectedChannelsB
-      }
-    };
+    const selectedChannelsA = AppState.userA.channels.filter(c => AppState.userA.selectedIds.has(c.id));
+    
+    // If User A has channels in memory (e.g. from Sample Data or current session), pass them directly
+    const userABody = selectedChannelsA.length > 0
+      ? { name: AppState.userA.name, channels: selectedChannelsA }
+      : { name: AppState.userA.name, payload: AppState.userA.payload };
 
     const res = await fetch('/api/blend', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(bodyPayload)
+      body: JSON.stringify({
+        userA: userABody,
+        userB: {
+          name: nameB,
+          channels: selectedChannelsB
+        }
+      })
     });
 
     const data = await res.json();
@@ -742,9 +744,11 @@ function renderBlendResultsView() {
   if (!res) return;
 
   const isEn = AppState.lang === 'en-US';
+  const nameA = res.userA.name || 'User A';
+  const nameB = res.userB.name || 'User B';
 
-  document.getElementById('resUserAName').innerText = res.userA.name;
-  document.getElementById('resUserBName').innerText = res.userB.name;
+  document.getElementById('resUserAName').innerText = nameA;
+  document.getElementById('resUserBName').innerText = nameB;
   document.getElementById('resChemistryLevel').innerText = isEn ? res.stats.chemistryLevelEn : res.stats.chemistryLevel;
   document.getElementById('resMatchScore').innerText = `${res.stats.matchPercentage}%`;
   document.getElementById('resChemistryDesc').innerText = isEn ? res.stats.chemistryDescriptionEn : res.stats.chemistryDescription;
@@ -753,6 +757,19 @@ function renderBlendResultsView() {
   document.getElementById('resCountAOnly').innerText = res.stats.aOnlyCount;
   document.getElementById('resCountBOnly').innerText = res.stats.bOnlyCount;
   document.getElementById('resCountIndie').innerText = res.indieGems.length;
+
+  // Dynamically update nickname labels in stat cards & tabs
+  const lblStatA = document.getElementById('lblStatAOnly');
+  if (lblStatA) lblStatA.innerText = isEn ? `${nameA}'s Unique` : `${nameA} 獨有推坑`;
+
+  const lblStatB = document.getElementById('lblStatBOnly');
+  if (lblStatB) lblStatB.innerText = isEn ? `${nameB}'s Unique` : `${nameB} 獨有推坑`;
+
+  const lblTabA = document.getElementById('lblTabAOnly');
+  if (lblTabA) lblTabA.innerText = isEn ? `${nameA} Recommends` : `${nameA} 推薦`;
+
+  const lblTabB = document.getElementById('lblTabBOnly');
+  if (lblTabB) lblTabB.innerText = isEn ? `${nameB} Recommends` : `${nameB} 推薦`;
 
   document.getElementById('tabCountCommon').innerText = res.stats.commonCount;
   document.getElementById('tabCountAOnly').innerText = res.stats.aOnlyCount;
@@ -766,6 +783,10 @@ function switchResultTab(tabKey) {
   AppState.activeResultTab = tabKey;
   const res = AppState.blendResult;
   if (!res) return;
+
+  const isEn = AppState.lang === 'en-US';
+  const nameA = res.userA.name || 'User A';
+  const nameB = res.userB.name || 'User B';
 
   document.querySelectorAll('.tab-res-btn').forEach(b => {
     b.classList.remove('bg-rose-600', 'text-white', 'shadow-lg');
@@ -784,16 +805,16 @@ function switchResultTab(tabKey) {
 
   if (tabKey === 'common') {
     channels = res.commonChannels;
-    emptyMsg = AppState.lang === 'zh-TW' ? '你們目前沒有共同訂閱的頻道，正是互相推坑的好時機！' : 'No common channels found yet. Perfect opportunity to recommend!';
+    emptyMsg = isEn ? 'No common channels found yet. Perfect opportunity to recommend!' : '你們目前沒有共同訂閱的頻道，正是互相推坑的好時機！';
   } else if (tabKey === 'a_only') {
     channels = res.aRecommendationsToB;
-    emptyMsg = `${res.userA.name} has no further recommendations`;
+    emptyMsg = isEn ? `${nameA} has no further recommendations` : `${nameA} 暫無其他獨有推薦頻道`;
   } else if (tabKey === 'b_only') {
     channels = res.bRecommendationsToA;
-    emptyMsg = `${res.userB.name} has no further recommendations`;
+    emptyMsg = isEn ? `${nameB} has no further recommendations` : `${nameB} 暫無其他獨有推薦頻道`;
   } else if (tabKey === 'indie') {
     channels = res.indieGems;
-    emptyMsg = AppState.lang === 'zh-TW' ? '共同訂閱中暫無 10 萬粉以下的小眾寶藏' : 'No indie gems (< 100k subs) in common channels';
+    emptyMsg = isEn ? 'No indie gems (< 100k subs) in common channels' : '共同訂閱中暫無 10 萬粉以下的小眾寶藏';
   }
 
   if (channels.length === 0) {

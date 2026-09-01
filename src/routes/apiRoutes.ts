@@ -117,8 +117,9 @@ export function createApiRouter(youtubeService: YouTubeService): Router {
   /**
    * POST /api/blend - Compares two sets of channels and returns full taste blend metrics
    */
-  router.post('/blend', (req: Request, res: Response) => {
+  router.post('/blend', async (req: Request, res: Response) => {
     const { userA, userB } = req.body;
+    const token = req.cookies?.yt_access_token;
 
     if (!userA || !userB) {
       return res.status(400).json({ error: 'Both userA and userB data must be provided' });
@@ -129,19 +130,19 @@ export function createApiRouter(youtubeService: YouTubeService): Router {
       let channelsB: ChannelItem[] = [];
 
       // Resolve user A channels
-      if (Array.isArray(userA.channels)) {
+      if (Array.isArray(userA.channels) && userA.channels.length > 0) {
         channelsA = userA.channels;
       } else if (typeof userA.payload === 'string') {
         const idsA = unpackChannelIds(userA.payload);
-        channelsA = idsA.map(id => ({ id, title: `Channel (${id.slice(0, 8)}...)` }));
+        channelsA = await youtubeService.resolveChannelsByIds(idsA, token);
       }
 
       // Resolve user B channels
-      if (Array.isArray(userB.channels)) {
+      if (Array.isArray(userB.channels) && userB.channels.length > 0) {
         channelsB = userB.channels;
       } else if (typeof userB.payload === 'string') {
         const idsB = unpackChannelIds(userB.payload);
-        channelsB = idsB.map(id => ({ id, title: `Channel (${id.slice(0, 8)}...)` }));
+        channelsB = await youtubeService.resolveChannelsByIds(idsB, token);
       }
 
       const blendResult = calculateTasteBlend(

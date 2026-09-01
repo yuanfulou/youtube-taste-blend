@@ -314,11 +314,11 @@
             <p id="resCountCommon" class="text-2xl font-black text-rose-400 mt-0.5">0</p>
           </div>
           <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800">
-            <p class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="stat_a_only">A 獨有推坑</p>
+            <p class="text-[10px] text-slate-400 uppercase font-semibold" id="lblStatAOnly" data-i18n="stat_a_only">A 獨有推坑</p>
             <p id="resCountAOnly" class="text-2xl font-black text-indigo-400 mt-0.5">0</p>
           </div>
           <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800">
-            <p class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="stat_b_only">B 獨有推坑</p>
+            <p class="text-[10px] text-slate-400 uppercase font-semibold" id="lblStatBOnly" data-i18n="stat_b_only">B 獨有推坑</p>
             <p id="resCountBOnly" class="text-2xl font-black text-purple-400 mt-0.5">0</p>
           </div>
           <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800">
@@ -349,10 +349,10 @@
               <i class="fa-solid fa-heart text-xs"></i> <span data-i18n="tab_common">共同喜愛</span> (<span id="tabCountCommon">0</span>)
             </button>
             <button onclick="switchResultTab('a_only')" id="btnTabRes_a_only" class="tab-res-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition">
-              <span data-i18n="tab_a_only">A 推薦</span> (<span id="tabCountAOnly">0</span>)
+              <span id="lblTabAOnly" data-i18n="tab_a_only">A 推薦</span> (<span id="tabCountAOnly">0</span>)
             </button>
             <button onclick="switchResultTab('b_only')" id="btnTabRes_b_only" class="tab-res-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition">
-              <span data-i18n="tab_b_only">B 推薦</span> (<span id="tabCountBOnly">0</span>)
+              <span id="lblTabBOnly" data-i18n="tab_b_only">B 推薦</span> (<span id="tabCountBOnly">0</span>)
             </button>
             <button onclick="switchResultTab('indie')" id="btnTabRes_indie" class="tab-res-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition">
               <span data-i18n="tab_indie">✨ 小眾寶藏</span> (<span id="tabCountIndie">0</span>)

@@ -124,7 +124,7 @@ export class YouTubeService {
   /**
    * Helper to parse category from Wikipedia Topic URLs
    */
-  private static parseCategoryFromTopics(topics?: string[]): string {
+  public static parseCategoryFromTopics(topics?: string[]): string {
     if (!topics || topics.length === 0) return '綜合';
     for (const url of topics) {
       const match = url.match(/\/wiki\/(.+)$/);
@@ -237,6 +237,81 @@ export class YouTubeService {
     });
 
     return enrichedList.sort((a, b) => (a.lastActiveDaysAgo || 99) - (b.lastActiveDaysAgo || 99));
+  }
+
+  /**
+   * Resolves a list of channel IDs to full ChannelItem details (titles, thumbnails, categories)
+   */
+  public async resolveChannelsByIds(channelIds: string[], accessToken?: string): Promise<ChannelItem[]> {
+    if (!channelIds || channelIds.length === 0) return [];
+
+    const mockPool = YouTubeService.getMockSubscriptions('general');
+    const mockMap = new Map(mockPool.map(c => [c.id, c]));
+
+    const resolvedMap = new Map<string, ChannelItem>();
+    const missingIds: string[] = [];
+
+    for (const id of channelIds) {
+      if (mockMap.has(id)) {
+        resolvedMap.set(id, mockMap.get(id)!);
+      } else {
+        missingIds.push(id);
+      }
+    }
+
+    // If we have an accessToken and missing IDs, query YouTube channels.list in batches
+    if (missingIds.length > 0 && accessToken) {
+      try {
+        const auth = new google.auth.OAuth2();
+        auth.setCredentials({ access_token: accessToken });
+        const youtube = google.youtube({ version: 'v3', auth });
+
+        for (let i = 0; i < missingIds.length; i += 50) {
+          const chunk = missingIds.slice(i, i + 50);
+          const res = await youtube.channels.list({
+            part: ['snippet', 'topicDetails', 'statistics'],
+            id: chunk
+          });
+
+          const items = res.data.items || [];
+          for (const item of items) {
+            if (item.id && item.snippet) {
+              const subCount = item.statistics?.subscriberCount ? parseInt(item.statistics.subscriberCount, 10) : undefined;
+              const category = YouTubeService.parseCategoryFromTopics(item.topicDetails?.topicCategories as string[] | undefined);
+              const isIndie = subCount !== undefined && subCount < 100000 && subCount > 0;
+
+              resolvedMap.set(item.id, {
+                id: item.id,
+                title: item.snippet.title || item.id,
+                description: item.snippet.description || '',
+                thumbnailUrl: item.snippet.thumbnails?.default?.url || '',
+                subscriberCount: subCount,
+                category,
+                isIndie,
+                lastActive: '持續活躍',
+                lastActiveDaysAgo: 14
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to resolve channels by IDs via YouTube API', err);
+      }
+    }
+
+    // Assemble result in original order, providing friendly fallback title for any still unresolved
+    return channelIds.map(id => {
+      if (resolvedMap.has(id)) {
+        return resolvedMap.get(id)!;
+      }
+      return {
+        id,
+        title: `YouTube 頻道 (${id.slice(0, 6)}...)`,
+        category: '綜合',
+        lastActive: '持續活躍',
+        lastActiveDaysAgo: 14
+      };
+    });
   }
 
   /**
