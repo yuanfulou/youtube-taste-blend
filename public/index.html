@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Taste Blend (YouTube 品味雷達) - 後端驗證與互動測試面板</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff1f2',
+              500: '#f43f5e',
+              600: '#e11d48',
+              700: '#be123c'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    body {
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 50%, #020617 100%);
+      min-height: 100vh;
+      color: #f8fafc;
+    }
+    .glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 font-sans">
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- Header -->
+    <header class="glass rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 border border-rose-500/20">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-rose-500/30">
+            <i class="fa-solid fa-radar"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-rose-400 via-purple-300 to-indigo-300 bg-clip-text text-transparent">
+              YouTube Taste Blend
+            </h1>
+            <p class="text-xs md:text-sm text-slate-400">Zero-Storage 16-Byte Brotli 品味雷達 (後端驗證控制台)</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        <div id="oauthStatusBadge" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> 偵測 OAuth 狀態中...
+        </div>
+        <a id="loginBtn" href="/auth/google" class="hidden px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-rose-600/30 flex items-center gap-2">
+          <i class="fa-brands fa-google"></i> Google 授權登入
+        </a>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="flex border-b border-slate-700/60 gap-2">
+      <button onclick="switchTab('tab-blend')" id="btn-tab-blend" class="tab-btn px-5 py-3 text-sm font-semibold border-b-2 border-rose-500 text-rose-400 flex items-center gap-2">
+        <i class="fa-solid fa-people-arrows"></i> 雙人品味比對模擬
+      </button>
+      <button onclick="switchTab('tab-codec')" id="btn-tab-codec" class="tab-btn px-5 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+        <i class="fa-solid fa-file-zipper"></i> 16-Byte Brotli 編解碼器
+      </button>
+      <button onclick="switchTab('tab-api')" id="btn-tab-api" class="tab-btn px-5 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+        <i class="fa-solid fa-server"></i> 後端 API 監控
+      </button>
+    </div>
+
+    <!-- Tab 1: Blend Comparison Simulation -->
+    <section id="tab-blend" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- User A Card -->
+        <div class="glass rounded-2xl p-5 border border-indigo-500/20 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">A</span>
+              <h2 class="font-bold text-base text-indigo-300">User A (發起者)</h2>
+            </div>
+            <button onclick="loadMockA()" class="px-2.5 py-1 bg-indigo-900/50 hover:bg-indigo-800 text-indigo-200 border border-indigo-700/50 text-xs rounded-lg transition">
+              載入範例清單 A
+            </button>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">暱稱：</label>
+            <input type="text" id="userAName" value="Alice (愛莉絲)" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs text-slate-400">訂閱頻道清單 (已載入 <span id="countA" class="text-indigo-400 font-bold">0</span> 個)：</label>
+              <button onclick="clearA()" class="text-xs text-slate-500 hover:text-rose-400">清空</button>
+            </div>
+            <div id="listA" class="h-48 overflow-y-auto bg-slate-900/60 rounded-xl p-2 border border-slate-800 space-y-1.5 text-xs text-slate-300">
+              <p class="text-slate-500 text-center py-16">點擊上方「載入範例清單 A」開始</p>
+            </div>
+          </div>
+          <div>
+            <button onclick="packA()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-link"></i> 打包為 #u1 邀請網址
+            </button>
+            <div id="shareLinkContainer" class="mt-2 hidden">
+              <p class="text-[11px] text-slate-400 mb-1">生成的邀請網址 (包含 Brotli 壓縮 Payload)：</p>
+              <div class="flex gap-2">
+                <input type="text" id="shareUrlInput" readonly class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 font-mono" />
+                <button onclick="copyShareUrl()" class="px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg border border-slate-700">複製</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User B Card -->
+        <div class="glass rounded-2xl p-5 border border-purple-500/20 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs">B</span>
+              <h2 class="font-bold text-base text-purple-300">User B (受邀者)</h2>
+            </div>
+            <button onclick="loadMockB()" class="px-2.5 py-1 bg-purple-900/50 hover:bg-purple-800 text-purple-200 border border-purple-700/50 text-xs rounded-lg transition">
+              載入範例清單 B
+            </button>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">暱稱：</label>
+            <input type="text" id="userBName" value="Bob (鮑伯)" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-purple-500" />
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs text-slate-400">訂閱頻道清單 (已載入 <span id="countB" class="text-purple-400 font-bold">0</span> 個)：</label>
+              <button onclick="clearB()" class="text-xs text-slate-500 hover:text-rose-400">清空</button>
+            </div>
+            <div id="listB" class="h-48 overflow-y-auto bg-slate-900/60 rounded-xl p-2 border border-slate-800 space-y-1.5 text-xs text-slate-300">
+              <p class="text-slate-500 text-center py-16">點擊上方「載入範例清單 B」開始</p>
+            </div>
+          </div>
+          <div>
+            <button onclick="runBlend()" class="w-full py-2 bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> 執行雙人品味比對 (Taste Blend)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blend Results Output -->
+      <div id="blendResultSection" class="glass rounded-2xl p-6 border border-rose-500/30 space-y-6 hidden">
+        <div class="flex flex-col md:flex-row items-center justify-between border-b border-slate-800 pb-6 gap-4">
+          <div>
+            <div class="inline-block px-3 py-1 bg-rose-950/60 border border-rose-800 text-rose-400 text-xs font-bold rounded-full mb-2" id="resTierBadge">
+              契合度計算中...
+            </div>
+            <h3 class="text-2xl font-black text-white flex items-center gap-2">
+              <span id="resMatchPercentage" class="text-4xl text-rose-400">0%</span>
+              <span>品味重疊率</span>
+            </h3>
+            <p id="resDescription" class="text-xs text-slate-400 mt-1 max-w-xl"></p>
+          </div>
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="bg-slate-900/80 px-4 py-3 rounded-xl border border-slate-800">
+              <p class="text-[11px] text-slate-400">共同訂閱</p>
+              <p id="statCommon" class="text-xl font-bold text-rose-400">0</p>
+            </div>
+            <div class="bg-slate-900/80 px-4 py-3 rounded-xl border border-slate-800">
+              <p class="text-[11px] text-slate-400">A 獨有推坑</p>
+              <p id="statAOnly" class="text-xl font-bold text-indigo-400">0</p>
+            </div>
+            <div class="bg-slate-900/80 px-4 py-3 rounded-xl border border-slate-800">
+              <p class="text-[11px] text-slate-400">B 獨有推坑</p>
+              <p id="statBOnly" class="text-xl font-bold text-purple-400">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Detailed Result Tabs/Columns -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- 共同訂閱 (Common) -->
+          <div class="bg-slate-900/80 rounded-xl p-4 border border-rose-500/20 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-heart"></i> 共同喜愛頻道
+              </h4>
+              <span id="badgeCommonCount" class="text-[11px] bg-rose-950 text-rose-300 px-2 py-0.5 rounded-md font-bold">0</span>
+            </div>
+            <div id="containerCommon" class="h-64 overflow-y-auto space-y-2 text-xs"></div>
+          </div>
+
+          <!-- A 推薦給 B (A's Unique) -->
+          <div class="bg-slate-900/80 rounded-xl p-4 border border-indigo-500/20 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i> A 推薦給 B
+              </h4>
+              <span id="badgeACount" class="text-[11px] bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded-md font-bold">0</span>
+            </div>
+            <div id="containerAOnly" class="h-64 overflow-y-auto space-y-2 text-xs"></div>
+          </div>
+
+          <!-- B 推薦給 A (B's Unique) -->
+          <div class="bg-slate-900/80 rounded-xl p-4 border border-purple-500/20 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-sparkles"></i> B 推薦給 A
+              </h4>
+              <span id="badgeBCount" class="text-[11px] bg-purple-950 text-purple-300 px-2 py-0.5 rounded-md font-bold">0</span>
+            </div>
+            <div id="containerBOnly" class="h-64 overflow-y-auto space-y-2 text-xs"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Codec Playground -->
+    <section id="tab-codec" class="glass rounded-2xl p-6 border border-slate-800 space-y-6 hidden">
+      <div>
+        <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-binary text-rose-400"></i> 16-Byte 二進位 Brotli 編解碼即時測試
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">
+          將 YouTube Channel ID（24 字元）轉換為 16-byte raw buffer 並進行 Brotli 最高等級壓縮，產生 Base64URL Payload。
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-3">
+          <label class="text-xs font-bold text-slate-300 block">輸入 Channel IDs (一行一個)：</label>
+          <textarea id="codecInput" rows="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500" placeholder="UCBJycsmduvYEL83R_U4JriQ&#10;UC_x5XG1OV2P6uZZ5FSM9Ttw&#10;UCsTcErHg8oDvUnTzoqsYeNw"></textarea>
+          <div class="flex gap-2">
+            <button onclick="testPack()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition">
+              執行壓縮 (Pack)
+            </button>
+            <button onclick="fillSampleCodec()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs">
+              填入 10 個測試頻道
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <label class="text-xs font-bold text-slate-300 block">壓縮輸出與統計數據：</label>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3">
+            <div>
+              <p class="text-[11px] text-slate-500">Base64URL Payload：</p>
+              <p id="codecPayloadOutput" class="text-xs font-mono text-emerald-400 break-all bg-slate-900 p-2 rounded-lg border border-slate-800 min-h-[48px] select-all">尚未產生</p>
+            </div>
+            <div id="codecStatsOutput" class="text-xs text-slate-400 space-y-1">
+              <p>頻道數量：-</p>
+              <p>原始文字大小：-</p>
+              <p>16-byte 二進位大小：-</p>
+              <p>壓縮後大小：-</p>
+              <p>節省率：-</p>
+            </div>
+          </div>
+          <button onclick="testUnpack()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition">
+            反向解壓縮驗證 (Unpack)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 3: API Monitor -->
+    <section id="tab-api" class="glass rounded-2xl p-6 border border-slate-800 space-y-6 hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+            <i class="fa-solid fa-network-wired text-rose-400"></i> 後端 API 端點與健康狀態
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">Express API 運行狀態與系統診斷資訊</p>
+        </div>
+        <button onclick="refreshHealth()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-xl border border-slate-700">
+          <i class="fa-solid fa-rotate-right mr-1"></i> 重新整理
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+          <p class="font-bold text-slate-300">後端 Health Endpoint (/api/health)</p>
+          <pre id="healthJson" class="text-emerald-400 font-mono overflow-x-auto p-2 bg-slate-900 rounded-lg">載入中...</pre>
+        </div>
+        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+          <p class="font-bold text-slate-300">Google OAuth 狀態 (/auth/status)</p>
+          <pre id="authJson" class="text-indigo-400 font-mono overflow-x-auto p-2 bg-slate-900 rounded-lg">載入中...</pre>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let userAChannels = [];
+    let userBChannels = [];
+
+    function switchTab(tabId) {
+      document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-rose-500', 'text-rose-400');
+        btn.classList.add('border-transparent', 'text-slate-400');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('btn-' + tabId);
+      activeBtn.classList.add('border-rose-500', 'text-rose-400');
+      activeBtn.classList.remove('border-transparent', 'text-slate-400');
+    }
+
+    async function checkStatus() {
+      try {
+        const res = await fetch('/auth/status');
+        const data = await res.json();
+        const badge = document.getElementById('oauthStatusBadge');
+        const loginBtn = document.getElementById('loginBtn');
+
+        if (data.configured) {
+          badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Google OAuth 已啟用';
+          badge.className = 'px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-800 flex items-center gap-2';
+          loginBtn.classList.remove('hidden');
+        } else {
+          badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Mock 模式 (無需設定 Google 金鑰)';
+          badge.className = 'px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-950/60 text-amber-300 border border-amber-800 flex items-center gap-2';
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadMockA() {
+      const res = await fetch('/api/mock/subscriptions?profile=A');
+      const data = await res.json();
+      userAChannels = data.channels;
+      renderChannelList('listA', userAChannels, 'countA', 'indigo');
+    }
+
+    async function loadMockB() {
+      const res = await fetch('/api/mock/subscriptions?profile=B');
+      const data = await res.json();
+      userBChannels = data.channels;
+      renderChannelList('listB', userBChannels, 'countB', 'purple');
+    }
+
+    function clearA() {
+      userAChannels = [];
+      renderChannelList('listA', [], 'countA', 'indigo');
+      document.getElementById('shareLinkContainer').classList.add('hidden');
+    }
+
+    function clearB() {
+      userBChannels = [];
+      renderChannelList('listB', [], 'countB', 'purple');
+    }
+
+    function renderChannelList(containerId, channels, countId, color) {
+      document.getElementById(countId).innerText = channels.length;
+      const el = document.getElementById(containerId);
+      if (channels.length === 0) {
+        el.innerHTML = '<p class="text-slate-500 text-center py-16">尚無頻道</p>';
+        return;
+      }
+
+      el.innerHTML = channels.map(c => `
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-800/80 border border-slate-700/50">
+          <div class="truncate mr-2">
+            <span class="font-bold text-slate-200">${c.title}</span>
+            <span class="text-[10px] text-slate-500 block">${c.id}</span>
+          </div>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            ${c.isIndie ? '<span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 text-[10px] border border-amber-800">小眾寶藏</span>' : ''}
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-400">${c.category || 'YouTube'}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function packA() {
+      if (userAChannels.length === 0) {
+        alert('請先載入或添加 User A 的訂閱頻道！');
+        return;
+      }
+      const channelIds = userAChannels.map(c => c.id);
+      const res = await fetch('/api/pack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelIds })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const name = encodeURIComponent(document.getElementById('userAName').value || 'UserA');
+        const url = `${window.location.origin}/#u1=${data.payload}&name=${name}`;
+        document.getElementById('shareUrlInput').value = url;
+        document.getElementById('shareLinkContainer').classList.remove('hidden');
+      }
+    }
+
+    function copyShareUrl() {
+      const input = document.getElementById('shareUrlInput');
+      input.select();
+      navigator.clipboard.writeText(input.value);
+      alert('已複製邀請網址至剪貼簿！');
+    }
+
+    async function runBlend() {
+      if (userAChannels.length === 0 || userBChannels.length === 0) {
+        alert('請先分別載入 User A 與 User B 的頻道清單！');
+        return;
+      }
+
+      const res = await fetch('/api/blend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userA: { name: document.getElementById('userAName').value, channels: userAChannels },
+          userB: { name: document.getElementById('userBName').value, channels: userBChannels }
+        })
+      });
+
+      const { result } = await res.json();
+      renderBlendResults(result);
+    }
+
+    function renderBlendResults(result) {
+      document.getElementById('blendResultSection').classList.remove('hidden');
+      document.getElementById('resTierBadge').innerText = result.stats.chemistryLevel;
+      document.getElementById('resMatchPercentage').innerText = `${result.stats.matchPercentage}%`;
+      document.getElementById('resDescription').innerText = result.stats.chemistryDescription;
+
+      document.getElementById('statCommon').innerText = result.stats.commonCount;
+      document.getElementById('statAOnly').innerText = result.stats.aOnlyCount;
+      document.getElementById('statBOnly').innerText = result.stats.bOnlyCount;
+
+      document.getElementById('badgeCommonCount').innerText = result.commonChannels.length;
+      document.getElementById('badgeACount').innerText = result.aRecommendationsToB.length;
+      document.getElementById('badgeBCount').innerText = result.bRecommendationsToA.length;
+
+      renderResultCards('containerCommon', result.commonChannels, 'rose');
+      renderResultCards('containerAOnly', result.aRecommendationsToB, 'indigo');
+      renderResultCards('containerBOnly', result.bRecommendationsToA, 'purple');
+
+      document.getElementById('blendResultSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderResultCards(containerId, channels, color) {
+      const el = document.getElementById(containerId);
+      if (channels.length === 0) {
+        el.innerHTML = '<p class="text-slate-500 text-center py-12">無項目</p>';
+        return;
+      }
+      el.innerHTML = channels.map(c => `
+        <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 hover:border-slate-700 transition">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-200 truncate mr-1">${c.title}</span>
+            ${c.isIndie ? '<span class="text-[9px] bg-amber-950 text-amber-300 px-1 py-0.5 rounded border border-amber-800 flex-shrink-0">寶藏</span>' : ''}
+          </div>
+          <p class="text-[10px] text-slate-500 truncate mt-0.5">${c.id}</p>
+        </div>
+      `).join('');
+    }
+
+    function fillSampleCodec() {
+      document.getElementById('codecInput').value = [
+        'UC_x5XG1OV2P6uZZ5FSM9Ttw',
+        'UCBJycsmduvYEL83R_U4JriQ',
+        'UC-lHJZR3Gqxm24_Vd_AJ5Yw',
+        'UCX6OQ3DkcsbYNE6H8uQQuVA',
+        'UCsTcErHg8oDvUnTzoqsYeNw',
+        'UC7_YxT-KID8kRbqZo7MyscQ',
+        'UCtinbFUXtCuCYZ3Uet1uFBA',
+        'UC2C_jShtL725hvbm1arSV9w',
+        'UC0123456789abcdefghij01',
+        'UC0123456789abcdefghij02'
+      ].join('\n');
+    }
+
+    async function testPack() {
+      const text = document.getElementById('codecInput').value;
+      const ids = text.split('\n').map(s => s.trim()).filter(Boolean);
+      if (ids.length === 0) return alert('請輸入至少一個頻道 ID');
+
+      const res = await fetch('/api/pack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelIds: ids })
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('codecPayloadOutput').innerText = data.payload;
+        document.getElementById('codecStatsOutput').innerHTML = `
+          <p>頻道數量：<span class="text-rose-400 font-bold">${data.channelCount}</span> 個</p>
+          <p>原始文字大小：${data.originalTextBytes} bytes</p>
+          <p>16-byte 二進位大小：${data.binaryPackedBytes} bytes</p>
+          <p>Brotli 壓縮後大小：<span class="text-emerald-400 font-bold">${data.compressedPayloadLength}</span> bytes</p>
+          <p>壓縮節省率：<span class="text-amber-400 font-bold">${data.compressionRatio}</span></p>
+        `;
+      }
+    }
+
+    async function testUnpack() {
+      const payload = document.getElementById('codecPayloadOutput').innerText.trim();
+      if (!payload || payload === '尚未產生') return alert('請先執行壓縮 (Pack)');
+
+      const res = await fetch('/api/unpack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`成功解碼出 ${data.count} 個頻道 ID！\n\n` + data.channelIds.slice(0, 5).join('\n') + (data.count > 5 ? '\n...' : ''));
+      }
+    }
+
+    async function refreshHealth() {
+      try {
+        const healthRes = await fetch('/api/health');
+        document.getElementById('healthJson').innerText = JSON.stringify(await healthRes.json(), null, 2);
+
+        const authRes = await fetch('/auth/status');
+        document.getElementById('authJson').innerText = JSON.stringify(await authRes.json(), null, 2);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      checkStatus();
+      refreshHealth();
+      loadMockA();
+      loadMockB();
+    });
+  </script>
+</body>
+</html>
