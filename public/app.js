@@ -73,6 +73,7 @@ const I18N = {
     updated_this_week: '本週更新',
     active_channel: '持續活躍',
     btn_random_name: '隨機匿名',
+    btn_test_as_receiver: '🚀 立即以好友視角測試比對',
     modal_share_title: '專屬品味邀請網址已產生！',
     modal_share_desc: '複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。',
     modal_share_label: '專屬分享網址 (含 16-Byte Brotli Hash)：',
@@ -148,6 +149,7 @@ const I18N = {
     updated_this_week: 'Updated this week',
     active_channel: 'Active channel',
     btn_random_name: 'Random Anon',
+    btn_test_as_receiver: '🚀 Test as Receiver Instantly',
     modal_share_title: 'Your Taste Invite Link is Ready!',
     modal_share_desc: 'Copy the link to your friend or let them scan the QR code to duel.',
     modal_share_label: 'Custom Share Link (with 16-Byte Brotli Hash):',
@@ -317,34 +319,6 @@ function showToast(message, type = 'info') {
   }, 3200);
 }
 
-// Check URL Hash on boot
-function parseUrlHash() {
-  const hash = window.location.hash.substring(1);
-  if (!hash) return;
-
-  const params = new URLSearchParams(hash);
-  const u1Payload = params.get('u1');
-  const u1Name = params.get('name');
-
-  if (u1Payload) {
-    sessionStorage.setItem('taste_invite_u1', u1Payload);
-    sessionStorage.setItem('taste_invite_name', u1Name || 'Friend');
-  }
-}
-
-function checkInviteSession() {
-  const savedPayload = sessionStorage.getItem('taste_invite_u1');
-  const savedName = sessionStorage.getItem('taste_invite_name');
-
-  if (savedPayload) {
-    AppState.userA.payload = savedPayload;
-    AppState.userA.name = savedName || 'Friend';
-    setAppMode('receiver');
-  } else {
-    setAppMode('creator');
-  }
-}
-
 function setAppMode(mode) {
   AppState.mode = mode;
   document.getElementById('viewCreator').classList.add('hidden');
@@ -363,11 +337,28 @@ function setAppMode(mode) {
   }
 }
 
+function switchPerspective() {
+  if (AppState.mode === 'creator') {
+    // Switching to Receiver view
+    // Carry over User A's current selected channels/payload into inviter slot
+    const nameA = document.getElementById('inputUserAName').value.trim() || AppState.userA.name || 'Alice';
+    AppState.userA.name = nameA;
+    setAppMode('receiver');
+  } else {
+    // Switching back to Creator view
+    setAppMode('creator');
+  }
+}
+
 // Check auth status and auto-fetch real subscriptions if logged in
 async function initAuthAndSubscriptions() {
   const urlParams = new URLSearchParams(window.location.search);
   const targetParam = urlParams.get('target');
-  
+  const hash = window.location.hash.substring(1);
+  const hashParams = new URLSearchParams(hash);
+  const u1Payload = hashParams.get('u1');
+  const u1Name = hashParams.get('name');
+
   if (urlParams.get('oauth_help')) {
     openOAuthModal();
     window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
@@ -378,13 +369,21 @@ async function initAuthAndSubscriptions() {
     window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
   }
 
+  // Handle incoming invite link
+  if (u1Payload) {
+    AppState.userA.payload = u1Payload;
+    AppState.userA.name = u1Name || 'Friend';
+    setAppMode('receiver');
+  } else {
+    setAppMode('creator');
+  }
+
   try {
     const statusRes = await fetch('/auth/status');
     const statusData = await statusRes.json();
     AppState.isAuthenticated = statusData.authenticated;
 
     if (AppState.isAuthenticated) {
-      // Determine which user account to populate based on targetParam or active view mode
       const activeTarget = (targetParam === 'B' || AppState.mode === 'receiver') ? 'B' : 'A';
       
       const subRes = await fetch('/api/subscriptions');
@@ -394,7 +393,6 @@ async function initAuthAndSubscriptions() {
         const user = activeTarget === 'A' ? AppState.userA : AppState.userB;
         user.channels = subData.channels;
         
-        // Auto preload profile name from YouTube if available
         if (statusData.profileName) {
           user.name = statusData.profileName;
           const nameInput = document.getElementById(activeTarget === 'A' ? 'inputUserAName' : 'inputUserBName');
@@ -407,12 +405,14 @@ async function initAuthAndSubscriptions() {
         renderCategoryTabs(activeTarget);
         renderChannelSelection(activeTarget);
 
-        // If User B just logged in, ensure we remain in receiver view and User A has sample data
-        if (activeTarget === 'B') {
-          setAppMode('receiver');
-          if (AppState.userA.channels.length === 0) {
-            loadSubscriptions('A', 'A');
+        // Preload the other user's sample data so duel is instantly runnable
+        if (activeTarget === 'A') {
+          await loadSubscriptions('B', 'B', false);
+        } else {
+          if (AppState.userA.channels.length === 0 && !AppState.userA.payload) {
+            await loadSubscriptions('A', 'A', false);
           }
+          setAppMode('receiver');
         }
 
         showToast(t('toast_real_loaded'), 'success');
@@ -423,12 +423,13 @@ async function initAuthAndSubscriptions() {
     console.error('Error checking auth', e);
   }
 
-  loadSubscriptions('A', 'A');
-  loadSubscriptions('B', 'B');
+  // Fallback to sample data for both sides
+  await loadSubscriptions('A', 'A', false);
+  await loadSubscriptions('B', 'B', false);
 }
 
 // Load Subscriptions (Explicit Mock or fallback)
-async function loadSubscriptions(target = 'A', profile = 'A') {
+async function loadSubscriptions(target = 'A', profile = 'A', showNotice = true) {
   try {
     const res = await fetch(`/api/mock/subscriptions?profile=${profile}`);
     const data = await res.json();
@@ -441,9 +442,11 @@ async function loadSubscriptions(target = 'A', profile = 'A') {
     
     renderCategoryTabs(target);
     renderChannelSelection(target);
-    showToast(t('toast_loaded'), 'success');
+    if (showNotice) {
+      showToast(t('toast_loaded'), 'success');
+    }
   } catch (err) {
-    showToast('Failed to load: ' + err.message, 'error');
+    if (showNotice) showToast('Failed to load: ' + err.message, 'error');
   }
 }
 
@@ -680,6 +683,12 @@ async function generateShareUrl() {
   }
 }
 
+function testAsReceiverFromModal() {
+  document.getElementById('modalShareLink').classList.add('hidden');
+  setAppMode('receiver');
+  window.history.pushState({}, document.title, `/#u1=${AppState.userA.payload}&name=${encodeURIComponent(AppState.userA.name)}`);
+}
+
 function copyToClipboard(elementId) {
   const input = document.getElementById(elementId);
   input.select();
@@ -703,7 +712,7 @@ async function runBlendWithUserA() {
   try {
     const selectedChannelsA = AppState.userA.channels.filter(c => AppState.userA.selectedIds.has(c.id));
     
-    // If User A has channels in memory (e.g. from Sample Data or current session), pass them directly
+    // If User A has channels in memory (e.g. from current session), pass them directly
     const userABody = selectedChannelsA.length > 0
       ? { name: AppState.userA.name, channels: selectedChannelsA }
       : { name: AppState.userA.name, payload: AppState.userA.payload };
@@ -913,8 +922,6 @@ async function exportTasteCard() {
 
 // App Initialization
 window.addEventListener('DOMContentLoaded', () => {
-  parseUrlHash();
-  checkInviteSession();
   applyTranslations();
   initAuthAndSubscriptions();
 
