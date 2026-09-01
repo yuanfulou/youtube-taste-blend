@@ -3,6 +3,7 @@
  */
 
 const MAX_SELECTABLE_CHANNELS = 100;
+const CHANNELS_PER_PAGE = 40;
 
 const RANDOM_NICKNAMES = {
   'zh-TW': [
@@ -22,7 +23,8 @@ const I18N = {
     brand_title: 'YouTube Taste Blend',
     brand_subtitle: 'YouTube 品味雷達 · 零存儲隱私比對',
     zero_storage_badge: '100% 零伺服器存儲',
-    switch_perspective: '切換視角',
+    nav_create_challenge: '我要發起挑戰',
+    nav_duel_friend: '我想跟朋友比對',
     lang_name: 'English',
     step1_badge: 'Step 1: 建立你的專屬品味包',
     hero_title_1: '看看你跟好友的 ',
@@ -35,6 +37,7 @@ const I18N = {
     btn_mock_data: '一鍵示範資料',
     label_nickname: '你的暱稱：',
     label_search: '快速搜尋頻道：',
+    label_category_filter: '分類篩選：',
     search_placeholder: '輸入關鍵字篩選...',
     filter_all: '全部',
     filter_indie: '✨ 僅小眾寶藏',
@@ -74,6 +77,9 @@ const I18N = {
     active_channel: '持續活躍',
     btn_random_name: '隨機匿名',
     btn_test_as_receiver: '🚀 立即以好友視角測試比對',
+    page_prev: '◀ 上一頁',
+    page_next: '下一頁 ▶',
+    page_info: '第 {current} / {total} 頁 (共 {count} 個頻道)',
     modal_share_title: '專屬品味邀請網址已產生！',
     modal_share_desc: '複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。',
     modal_share_label: '專屬分享網址 (含 16-Byte Brotli Hash)：',
@@ -98,7 +104,8 @@ const I18N = {
     brand_title: 'YouTube Taste Blend',
     brand_subtitle: 'YouTube Taste Radar · Zero-Storage Privacy Blend',
     zero_storage_badge: '100% Zero-Storage',
-    switch_perspective: 'Switch View',
+    nav_create_challenge: 'Create Challenge',
+    nav_duel_friend: 'Duel with Friend',
     lang_name: '繁體中文',
     step1_badge: 'Step 1: Create Your Taste Pack',
     hero_title_1: 'Discover Your ',
@@ -111,6 +118,7 @@ const I18N = {
     btn_mock_data: 'Load Sample Data',
     label_nickname: 'Your Nickname:',
     label_search: 'Search Channels:',
+    label_category_filter: 'Categories:',
     search_placeholder: 'Filter by keywords...',
     filter_all: 'All',
     filter_indie: '✨ Indie Gems Only',
@@ -150,6 +158,9 @@ const I18N = {
     active_channel: 'Active channel',
     btn_random_name: 'Random Anon',
     btn_test_as_receiver: '🚀 Test as Receiver Instantly',
+    page_prev: '◀ Prev',
+    page_next: 'Next ▶',
+    page_info: 'Page {current} / {total} ({count} channels)',
     modal_share_title: 'Your Taste Invite Link is Ready!',
     modal_share_desc: 'Copy the link to your friend or let them scan the QR code to duel.',
     modal_share_label: 'Custom Share Link (with 16-Byte Brotli Hash):',
@@ -197,6 +208,8 @@ const AppState = {
   lang: localStorage.getItem('taste_lang') || 'zh-TW',
   mode: 'creator', // 'creator' | 'receiver' | 'result'
   isAuthenticated: false,
+  pageA: 1,
+  pageB: 1,
   userA: {
     name: 'Alice',
     channels: [],
@@ -325,28 +338,22 @@ function setAppMode(mode) {
   document.getElementById('viewReceiver').classList.add('hidden');
   document.getElementById('viewResult').classList.add('hidden');
 
+  const navCreator = document.getElementById('navBtnCreator');
+  const navReceiver = document.getElementById('navBtnReceiver');
+
   if (mode === 'creator') {
     document.getElementById('viewCreator').classList.remove('hidden');
+    navCreator.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 bg-rose-600 text-white shadow-md';
+    navReceiver.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200';
   } else if (mode === 'receiver') {
     document.getElementById('viewReceiver').classList.remove('hidden');
+    navCreator.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200';
+    navReceiver.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-md';
     document.getElementById('receiverInviterName').innerText = AppState.userA.name;
     document.getElementById('receiverInviterBadge').innerText = AppState.userA.name;
   } else if (mode === 'result') {
     document.getElementById('viewResult').classList.remove('hidden');
     document.getElementById('viewResult').scrollIntoView({ behavior: 'smooth' });
-  }
-}
-
-function switchPerspective() {
-  if (AppState.mode === 'creator') {
-    // Switching to Receiver view
-    // Carry over User A's current selected channels/payload into inviter slot
-    const nameA = document.getElementById('inputUserAName').value.trim() || AppState.userA.name || 'Alice';
-    AppState.userA.name = nameA;
-    setAppMode('receiver');
-  } else {
-    // Switching back to Creator view
-    setAppMode('creator');
   }
 }
 
@@ -440,6 +447,9 @@ async function loadSubscriptions(target = 'A', profile = 'A', showNotice = true)
     const initialSelected = data.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
     user.selectedIds = new Set(initialSelected.map(c => c.id));
     
+    if (target === 'A') AppState.pageA = 1;
+    else AppState.pageB = 1;
+
     renderCategoryTabs(target);
     renderChannelSelection(target);
     if (showNotice) {
@@ -504,19 +514,40 @@ function renderCategoryTabs(target = 'A') {
 function setCategoryFilter(target, catKey) {
   if (target === 'A') {
     AppState.activeFilterA = catKey;
+    AppState.pageA = 1;
   } else {
     AppState.activeFilterB = catKey;
+    AppState.pageB = 1;
   }
   renderCategoryTabs(target);
   renderChannelSelection(target);
 }
 
-// Render Channel Selection List
+function changePage(target, pageDelta) {
+  if (target === 'A') {
+    AppState.pageA += pageDelta;
+  } else {
+    AppState.pageB += pageDelta;
+  }
+  renderChannelSelection(target);
+}
+
+function goToPage(target, pageNum) {
+  if (target === 'A') {
+    AppState.pageA = pageNum;
+  } else {
+    AppState.pageB = pageNum;
+  }
+  renderChannelSelection(target);
+}
+
+// Render Channel Selection List with High-Performance Pagination
 function renderChannelSelection(target = 'A') {
   const user = target === 'A' ? AppState.userA : AppState.userB;
   const listEl = document.getElementById(target === 'A' ? 'channelsListA' : 'channelsListB');
   const countEl = document.getElementById(target === 'A' ? 'selectedCountA' : 'selectedCountB');
   const totalEl = document.getElementById(target === 'A' ? 'totalCountA' : 'totalCountB');
+  const paginationEl = document.getElementById(target === 'A' ? 'paginationA' : 'paginationB');
   const query = target === 'A' ? AppState.searchQueryA.toLowerCase() : AppState.searchQueryB.toLowerCase();
   const filterCat = target === 'A' ? AppState.activeFilterA : AppState.activeFilterB;
 
@@ -541,10 +572,24 @@ function renderChannelSelection(target = 'A') {
 
   if (filtered.length === 0) {
     listEl.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500 text-xs"><i class="fa-solid fa-filter-circle-xmark text-lg mb-2 block"></i>無符合篩選條件的頻道 (No channels match filter)</div>`;
+    if (paginationEl) paginationEl.innerHTML = '';
     return;
   }
 
-  listEl.innerHTML = filtered.map(c => {
+  // Pagination calculation
+  const totalPages = Math.ceil(filtered.length / CHANNELS_PER_PAGE) || 1;
+  let currentPage = target === 'A' ? AppState.pageA : AppState.pageB;
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  if (target === 'A') AppState.pageA = currentPage;
+  else AppState.pageB = currentPage;
+
+  const startIndex = (currentPage - 1) * CHANNELS_PER_PAGE;
+  const endIndex = Math.min(startIndex + CHANNELS_PER_PAGE, filtered.length);
+  const pagedItems = filtered.slice(startIndex, endIndex);
+
+  // Render items (ultra fast)
+  listEl.innerHTML = pagedItems.map(c => {
     const isChecked = user.selectedIds.has(c.id);
     const activeText = formatLastActive(c.lastActiveDaysAgo ?? 14);
     const cat = c.category || '綜合';
@@ -569,6 +614,30 @@ function renderChannelSelection(target = 'A') {
       </div>
     `;
   }).join('');
+
+  // Render pagination controls
+  if (paginationEl) {
+    if (totalPages <= 1) {
+      paginationEl.innerHTML = `<span class="text-[11px] text-slate-500">${t('page_info', { current: 1, total: 1, count: filtered.length })}</span>`;
+    } else {
+      const isFirst = currentPage === 1;
+      const isLast = currentPage === totalPages;
+
+      paginationEl.innerHTML = `
+        <div class="flex items-center gap-2">
+          <button onclick="changePage('${target}', -1)" ${isFirst ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl text-xs font-bold border ${isFirst ? 'bg-slate-900/40 text-slate-600 border-slate-800/40 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'} transition">
+            ${t('page_prev')}
+          </button>
+          <button onclick="changePage('${target}', 1)" ${isLast ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl text-xs font-bold border ${isLast ? 'bg-slate-900/40 text-slate-600 border-slate-800/40 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'} transition">
+            ${t('page_next')}
+          </button>
+        </div>
+        <div class="text-[11px] text-slate-400 font-medium">
+          ${t('page_info', { current: currentPage, total: totalPages, count: filtered.length })}
+        </div>
+      `;
+    }
+  }
 }
 
 // Toggle Channel Selection with MAX limit checking
@@ -586,7 +655,7 @@ function toggleChannelSelect(target, id) {
   renderChannelSelection(target);
 }
 
-// Quick pre-select top N active channels
+// Quick pre-select top N active channels across all items
 function selectTopActive(target, count = 50) {
   const user = target === 'A' ? AppState.userA : AppState.userB;
   user.selectedIds.clear();
@@ -598,7 +667,7 @@ function selectTopActive(target, count = 50) {
   showToast(t('toast_preset_50', { n: user.selectedIds.size }), 'info');
 }
 
-// Select only Indie gems
+// Select only Indie gems across all items
 function selectIndieOnly(target) {
   const user = target === 'A' ? AppState.userA : AppState.userB;
   user.selectedIds.clear();
@@ -712,7 +781,7 @@ async function runBlendWithUserA() {
   try {
     const selectedChannelsA = AppState.userA.channels.filter(c => AppState.userA.selectedIds.has(c.id));
     
-    // If User A has channels in memory (e.g. from current session), pass them directly
+    // If User A has channels in memory, pass them directly
     const userABody = selectedChannelsA.length > 0
       ? { name: AppState.userA.name, channels: selectedChannelsA }
       : { name: AppState.userA.name, payload: AppState.userA.payload };
@@ -767,7 +836,6 @@ function renderBlendResultsView() {
   document.getElementById('resCountBOnly').innerText = res.stats.bOnlyCount;
   document.getElementById('resCountIndie').innerText = res.indieGems.length;
 
-  // Dynamically update nickname labels in stat cards & tabs
   const lblStatA = document.getElementById('lblStatAOnly');
   if (lblStatA) lblStatA.innerText = isEn ? `${nameA}'s Unique` : `${nameA} 獨有推坑`;
 
@@ -929,6 +997,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (searchA) {
     searchA.addEventListener('input', (e) => {
       AppState.searchQueryA = e.target.value;
+      AppState.pageA = 1;
       renderChannelSelection('A');
     });
   }
@@ -937,6 +1006,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (searchB) {
     searchB.addEventListener('input', (e) => {
       AppState.searchQueryB = e.target.value;
+      AppState.pageB = 1;
       renderChannelSelection('B');
     });
   }
