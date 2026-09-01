@@ -1,8 +1,138 @@
 /**
- * YouTube Taste Blend - Client Application Engine
+ * YouTube Taste Blend - Client Application Engine & i18n
  */
 
+const I18N = {
+  'zh-TW': {
+    brand_title: 'YouTube Taste Blend',
+    brand_subtitle: 'YouTube 品味雷達 · 零存儲隱私比對',
+    zero_storage_badge: '100% 零伺服器存儲',
+    switch_perspective: '切換視角',
+    lang_name: 'English',
+    step1_badge: 'Step 1: 建立你的專屬品味包',
+    hero_title_1: '看看你跟好友的 ',
+    hero_title_highlight: 'YouTube 品味契合度',
+    hero_title_2: ' 有多高？',
+    hero_desc: '授權或載入你的訂閱清單，勾選想公開的頻道。系統會透過 16-byte 二進位壓縮編碼進網址，後端完全不保存任何隱私紀錄。',
+    manage_subs: '管理公開訂閱清單',
+    manage_subs_desc: '可搜尋與取消勾選不想讓好友知道的私人/敏感頻道',
+    btn_google_login: '登入 Google 同步',
+    btn_mock_data: '一鍵示範資料',
+    label_nickname: '你的暱稱：',
+    label_search: '快速搜尋頻道：',
+    search_placeholder: '輸入關鍵字篩選...',
+    filter_all: '全部',
+    filter_indie: '✨ 僅小眾寶藏',
+    filter_tech: '科技',
+    filter_science: '科普',
+    filter_dev: '程式開發',
+    selected_text: '已選擇',
+    select_all: '全選',
+    deselect_all: '全取消',
+    btn_generate_url: '生成專屬品味邀請連結 (#u1)',
+    receiver_badge: '收到品味挑戰！',
+    receiver_title_suffix: ' 邀請你進行 YouTube 品味大對決！',
+    receiver_desc: '匯入你的 YouTube 訂閱，看看你們的常看頻道重疊率有多高，誰才是彼此的終極推坑王！',
+    receiver_config_title: '設定你的比對清單',
+    receiver_config_desc: '已成功載入好友的加密品味數據',
+    btn_start_blend: '開始比對！揭曉契合度報告',
+    stat_common: '共同訂閱',
+    stat_a_only: 'A 獨有推坑',
+    stat_b_only: 'B 獨有推坑',
+    stat_indie: '小眾寶藏',
+    btn_download_card: '下載 IG Story / Threads 比對圖卡',
+    btn_share_as_b: '換我發起挑戰 (打包我的邀請網址)',
+    channel_list_title: '頻道清單與推坑清冊',
+    tab_common: '共同喜愛',
+    tab_a_only: 'A 推薦',
+    tab_b_only: 'B 推薦',
+    tab_indie: '✨ 小眾寶藏',
+    btn_visit_channel: '前往頻道',
+    indie_tag: '✨ 寶藏',
+    subs_count: '訂閱',
+    modal_share_title: '專屬品味邀請網址已產生！',
+    modal_share_desc: '複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。',
+    modal_share_label: '專屬分享網址 (含 16-Byte Brotli Hash)：',
+    btn_copy: '複製',
+    copied_toast: '已複製連結至剪貼簿！',
+    toast_generating: '專屬品味邀請連結已生成！',
+    toast_loaded: '成功載入頻道！',
+    toast_blending: '正在比對你們的品味雷達...',
+    toast_card_success: '圖卡已成功下載！',
+    oauth_modal_title: 'Google OAuth 設定說明',
+    oauth_modal_desc: '如欲使用真正的 Google 帳號授權同步訂閱，請完成以下 3 個簡單步驟：',
+    oauth_step1: '1. 至 Google Cloud Console 啟用 YouTube Data API v3。',
+    oauth_step2: '2. 建立 OAuth 2.0 憑證，並將重新導向 URI 設定為：',
+    oauth_step3: '3. 將 Client ID 與 Secret 填入專案的 .env 檔案並重啟。',
+    oauth_tip: '💡 提示：在尚未設定金鑰前，您可以點擊【一鍵示範資料】直接進行全功能體驗！'
+  },
+  'en-US': {
+    brand_title: 'YouTube Taste Blend',
+    brand_subtitle: 'YouTube Taste Radar · Zero-Storage Privacy Blend',
+    zero_storage_badge: '100% Zero-Storage',
+    switch_perspective: 'Switch View',
+    lang_name: '繁體中文',
+    step1_badge: 'Step 1: Create Your Taste Pack',
+    hero_title_1: 'Discover Your ',
+    hero_title_highlight: 'YouTube Taste Blend',
+    hero_title_2: ' With Friends!',
+    hero_desc: 'Import your subscriptions and select public channels. Packed using 16-byte binary Brotli compression directly in the URL fragment with 0 server storage.',
+    manage_subs: 'Manage Public Subscriptions',
+    manage_subs_desc: 'Search and uncheck any private channels you prefer not to reveal',
+    btn_google_login: 'Google Sync',
+    btn_mock_data: 'Load Sample Data',
+    label_nickname: 'Your Nickname:',
+    label_search: 'Search Channels:',
+    search_placeholder: 'Filter by keywords...',
+    filter_all: 'All',
+    filter_indie: '✨ Indie Gems Only',
+    filter_tech: 'Tech',
+    filter_science: 'Science',
+    filter_dev: 'Dev',
+    selected_text: 'Selected',
+    select_all: 'Select All',
+    deselect_all: 'Deselect All',
+    btn_generate_url: 'Generate Taste Invite Link (#u1)',
+    receiver_badge: 'Taste Duel Challenge!',
+    receiver_title_suffix: ' invited you to a Taste Blend Duel!',
+    receiver_desc: 'Import your YouTube subscriptions to compare taste overlap and find out who has the best recommendations!',
+    receiver_config_title: 'Configure Your Match List',
+    receiver_config_desc: "Successfully loaded your friend's encrypted taste data",
+    btn_start_blend: 'Start Blend! Reveal Taste Report',
+    stat_common: 'Common Subs',
+    stat_a_only: "A's Unique",
+    stat_b_only: "B's Unique",
+    stat_indie: 'Indie Gems',
+    btn_download_card: 'Download IG Story / Threads Card',
+    btn_share_as_b: 'My Turn to Challenge (Share My Link)',
+    channel_list_title: 'Channel Recommendations & Details',
+    tab_common: 'Common',
+    tab_a_only: 'A Recommends',
+    tab_b_only: 'B Recommends',
+    tab_indie: '✨ Indie Gems',
+    btn_visit_channel: 'Visit Channel',
+    indie_tag: '✨ Gem',
+    subs_count: 'subs',
+    modal_share_title: 'Your Taste Invite Link is Ready!',
+    modal_share_desc: 'Copy the link to your friend or let them scan the QR code to duel.',
+    modal_share_label: 'Custom Share Link (with 16-Byte Brotli Hash):',
+    btn_copy: 'Copy',
+    copied_toast: 'Link copied to clipboard!',
+    toast_generating: 'Taste invite link generated!',
+    toast_loaded: 'Channels loaded successfully!',
+    toast_blending: 'Analyzing your taste blend...',
+    toast_card_success: 'Story card downloaded successfully!',
+    oauth_modal_title: 'Google OAuth Setup Guide',
+    oauth_modal_desc: 'To sync real YouTube subscriptions with Google, follow these 3 simple steps:',
+    oauth_step1: '1. Enable YouTube Data API v3 in Google Cloud Console.',
+    oauth_step2: '2. Create OAuth 2.0 Credentials with Redirect URI set to:',
+    oauth_step3: '3. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env and restart.',
+    oauth_tip: '💡 Tip: You can click [Load Sample Data] to experience all features right now without setting up keys!'
+  }
+};
+
 const AppState = {
+  lang: localStorage.getItem('taste_lang') || 'zh-TW',
   mode: 'creator', // 'creator' | 'receiver' | 'result'
   userA: {
     name: 'Alice',
@@ -21,10 +151,55 @@ const AppState = {
   searchQueryA: '',
   activeFilterB: 'all',
   searchQueryB: '',
-  activeResultTab: 'common' // 'common' | 'a_only' | 'b_only' | 'indie' | 'radar'
+  activeResultTab: 'common'
 };
 
-// Toast notification helper
+function t(key) {
+  const dict = I18N[AppState.lang] || I18N['zh-TW'];
+  return dict[key] || key;
+}
+
+function toggleLanguage() {
+  AppState.lang = AppState.lang === 'zh-TW' ? 'en-US' : 'zh-TW';
+  localStorage.setItem('taste_lang', AppState.lang);
+  applyTranslations();
+  renderChannelSelection('A');
+  renderChannelSelection('B');
+  if (AppState.blendResult) {
+    renderBlendResultsView();
+  }
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.innerText = t(key);
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.setAttribute('placeholder', t(key));
+  });
+
+  document.getElementById('langToggleBtn').innerText = t('lang_name');
+
+  // Check URL params for OAuth help modal
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('oauth_help')) {
+    openOAuthModal();
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+function openOAuthModal() {
+  document.getElementById('modalOAuthGuide').classList.remove('hidden');
+}
+
+function closeOAuthModal() {
+  document.getElementById('modalOAuthGuide').classList.add('hidden');
+}
+
+// Toast helper
 function showToast(message, type = 'info') {
   const toastContainer = document.getElementById('toastContainer');
   const toast = document.createElement('div');
@@ -60,7 +235,7 @@ function parseUrlHash() {
 
   if (u1Payload) {
     sessionStorage.setItem('taste_invite_u1', u1Payload);
-    sessionStorage.setItem('taste_invite_name', u1Name || '你的好友');
+    sessionStorage.setItem('taste_invite_name', u1Name || 'Friend');
   }
 }
 
@@ -71,7 +246,7 @@ function checkInviteSession() {
 
   if (savedPayload) {
     AppState.userA.payload = savedPayload;
-    AppState.userA.name = savedName || '好友';
+    AppState.userA.name = savedName || 'Friend';
     setAppMode('receiver');
   } else {
     setAppMode('creator');
@@ -97,26 +272,8 @@ function setAppMode(mode) {
   }
 }
 
-// Auth status check
-async function checkAuthStatus() {
-  try {
-    const res = await fetch('/auth/status');
-    const data = await res.json();
-    
-    const oauthButtons = document.querySelectorAll('.btn-google-oauth');
-    if (!data.configured) {
-      oauthButtons.forEach(btn => {
-        btn.setAttribute('title', '尚未配置 Google Client ID，請使用下方【一鍵載入示範資料】進行測試');
-      });
-    }
-  } catch (err) {
-    console.error('Failed to check auth status', err);
-  }
-}
-
 // Load Subscriptions (Real API or Mock)
 async function loadSubscriptions(target = 'A', profile = 'A') {
-  showToast(`正在載入 ${target === 'A' ? 'User A' : 'User B'} 的訂閱頻道...`, 'info');
   try {
     const res = await fetch(`/api/mock/subscriptions?profile=${profile}`);
     const data = await res.json();
@@ -125,19 +282,18 @@ async function loadSubscriptions(target = 'A', profile = 'A') {
       AppState.userA.channels = data.channels;
       AppState.userA.selectedIds = new Set(data.channels.map(c => c.id));
       renderChannelSelection('A');
-      showToast(`成功載入 ${data.channels.length} 個頻道！`, 'success');
     } else {
       AppState.userB.channels = data.channels;
       AppState.userB.selectedIds = new Set(data.channels.map(c => c.id));
       renderChannelSelection('B');
-      showToast(`成功載入 ${data.channels.length} 個頻道！`, 'success');
     }
+    showToast(t('toast_loaded'), 'success');
   } catch (err) {
-    showToast('載入失敗: ' + err.message, 'error');
+    showToast('Failed to load: ' + err.message, 'error');
   }
 }
 
-// Render Channel Selection List with Filters and Checkboxes
+// Render Channel Selection List
 function renderChannelSelection(target = 'A') {
   const user = target === 'A' ? AppState.userA : AppState.userB;
   const listEl = document.getElementById(target === 'A' ? 'channelsListA' : 'channelsListB');
@@ -158,7 +314,7 @@ function renderChannelSelection(target = 'A') {
   totalEl.innerText = user.channels.length;
 
   if (filtered.length === 0) {
-    listEl.innerHTML = `<div class="text-center py-12 text-slate-500 text-xs"><i class="fa-solid fa-filter-circle-xmark text-lg mb-2 block"></i>無符合篩選條件的頻道</div>`;
+    listEl.innerHTML = `<div class="text-center py-12 text-slate-500 text-xs"><i class="fa-solid fa-filter-circle-xmark text-lg mb-2 block"></i>No channels match filter</div>`;
     return;
   }
 
@@ -171,8 +327,8 @@ function renderChannelSelection(target = 'A') {
           <div class="truncate">
             <p class="font-bold text-xs text-slate-200 truncate">${c.title}</p>
             <div class="flex items-center gap-2 mt-0.5">
-              ${c.subscriberCount ? `<span class="text-[10px] text-slate-400">${formatSubscriberCount(c.subscriberCount)} 訂閱</span>` : ''}
-              ${c.isIndie ? '<span class="px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 text-[10px] border border-amber-800/80">✨ 寶藏</span>' : ''}
+              ${c.subscriberCount ? `<span class="text-[10px] text-slate-400">${formatSubscriberCount(c.subscriberCount)} ${t('subs_count')}</span>` : ''}
+              ${c.isIndie ? `<span class="px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 text-[10px] border border-amber-800/80">${t('indie_tag')}</span>` : ''}
             </div>
           </div>
         </div>
@@ -205,19 +361,25 @@ function selectAllChannels(target, selectAll = true) {
 }
 
 function formatSubscriberCount(count) {
-  if (count >= 10000000) return (count / 10000000).toFixed(1) + ' 千萬';
-  if (count >= 10000) return (count / 10000).toFixed(1) + ' 萬';
-  return count.toLocaleString();
+  if (AppState.lang === 'zh-TW') {
+    if (count >= 10000000) return (count / 10000000).toFixed(1) + ' 千萬';
+    if (count >= 10000) return (count / 10000).toFixed(1) + ' 萬';
+    return count.toLocaleString();
+  } else {
+    if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M';
+    if (count >= 1000) return (count / 1000).toFixed(1) + 'K';
+    return count.toLocaleString();
+  }
 }
 
 // Generate Share URL (User A)
 async function generateShareUrl() {
-  const name = document.getElementById('inputUserAName').value.trim() || '神秘好友';
+  const name = document.getElementById('inputUserAName').value.trim() || 'Alice';
   AppState.userA.name = name;
 
   const selectedChannels = AppState.userA.channels.filter(c => AppState.userA.selectedIds.has(c.id));
   if (selectedChannels.length === 0) {
-    showToast('請至少保留勾選 1 個公開頻道！', 'warning');
+    showToast('Please select at least 1 channel!', 'warning');
     return;
   }
 
@@ -250,10 +412,10 @@ async function generateShareUrl() {
         });
       }
 
-      showToast('專屬品味邀請連結已生成！', 'success');
+      showToast(t('toast_generating'), 'success');
     }
   } catch (err) {
-    showToast('產生連結失敗: ' + err.message, 'error');
+    showToast('Generation failed: ' + err.message, 'error');
   }
 }
 
@@ -262,21 +424,21 @@ function copyToClipboard(elementId) {
   const input = document.getElementById(elementId);
   input.select();
   navigator.clipboard.writeText(input.value);
-  showToast('已複製連結至剪貼簿！', 'success');
+  showToast(t('copied_toast'), 'success');
 }
 
 // User B starts Blend with User A
 async function runBlendWithUserA() {
-  const nameB = document.getElementById('inputUserBName').value.trim() || '受邀好友';
+  const nameB = document.getElementById('inputUserBName').value.trim() || 'Bob';
   AppState.userB.name = nameB;
 
   const selectedChannelsB = AppState.userB.channels.filter(c => AppState.userB.selectedIds.has(c.id));
   if (selectedChannelsB.length === 0) {
-    showToast('請至少選擇 1 個訂閱頻道！', 'warning');
+    showToast('Please select at least 1 channel!', 'warning');
     return;
   }
 
-  showToast('正在比對你們的品味雷達...', 'info');
+  showToast(t('toast_blending'), 'info');
 
   try {
     const res = await fetch('/api/blend', {
@@ -310,7 +472,7 @@ async function runBlendWithUserA() {
       }
     }
   } catch (err) {
-    showToast('比對失敗: ' + err.message, 'error');
+    showToast('Blend calculation failed: ' + err.message, 'error');
   }
 }
 
@@ -319,11 +481,13 @@ function renderBlendResultsView() {
   const res = AppState.blendResult;
   if (!res) return;
 
+  const isEn = AppState.lang === 'en-US';
+
   document.getElementById('resUserAName').innerText = res.userA.name;
   document.getElementById('resUserBName').innerText = res.userB.name;
-  document.getElementById('resChemistryLevel').innerText = res.stats.chemistryLevel;
+  document.getElementById('resChemistryLevel').innerText = isEn ? res.stats.chemistryLevelEn : res.stats.chemistryLevel;
   document.getElementById('resMatchScore').innerText = `${res.stats.matchPercentage}%`;
-  document.getElementById('resChemistryDesc').innerText = res.stats.chemistryDescription;
+  document.getElementById('resChemistryDesc').innerText = isEn ? res.stats.chemistryDescriptionEn : res.stats.chemistryDescription;
 
   document.getElementById('resCountCommon').innerText = res.stats.commonCount;
   document.getElementById('resCountAOnly').innerText = res.stats.aOnlyCount;
@@ -361,16 +525,16 @@ function switchResultTab(tabKey) {
 
   if (tabKey === 'common') {
     channels = res.commonChannels;
-    emptyMsg = '你們目前沒有共同訂閱的頻道，正是互相推坑的好時機！';
+    emptyMsg = AppState.lang === 'zh-TW' ? '你們目前沒有共同訂閱的頻道，正是互相推坑的好時機！' : 'No common channels found yet. Perfect opportunity to recommend!';
   } else if (tabKey === 'a_only') {
     channels = res.aRecommendationsToB;
-    emptyMsg = `${res.userA.name} 沒有更多獨家頻道了`;
+    emptyMsg = `${res.userA.name} has no further recommendations`;
   } else if (tabKey === 'b_only') {
     channels = res.bRecommendationsToA;
-    emptyMsg = `${res.userB.name} 沒有更多獨家頻道了`;
+    emptyMsg = `${res.userB.name} has no further recommendations`;
   } else if (tabKey === 'indie') {
     channels = res.indieGems;
-    emptyMsg = '雙方共同訂閱中暫無 10 萬粉以下的小眾寶藏頻道';
+    emptyMsg = AppState.lang === 'zh-TW' ? '共同訂閱中暫無 10 萬粉以下的小眾寶藏' : 'No indie gems (< 100k subs) in common channels';
   }
 
   if (channels.length === 0) {
@@ -385,12 +549,12 @@ function switchResultTab(tabKey) {
           <h4 class="font-bold text-sm text-slate-100 line-clamp-1">${c.title}</h4>
           <p class="text-[10px] text-slate-500 font-mono mt-0.5">${c.id}</p>
         </div>
-        ${c.isIndie ? '<span class="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 text-[10px] border border-amber-800 flex-shrink-0">✨ 寶藏</span>' : ''}
+        ${c.isIndie ? `<span class="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 text-[10px] border border-amber-800 flex-shrink-0">${t('indie_tag')}</span>` : ''}
       </div>
       <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800/80">
         <span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-950 text-slate-400 border border-slate-800">${c.category || 'YouTube'}</span>
         <a href="https://www.youtube.com/channel/${c.id}" target="_blank" rel="noopener noreferrer" class="text-rose-400 hover:text-rose-300 flex items-center gap-1 text-[11px] font-semibold">
-          前往頻道 <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+          ${t('btn_visit_channel')} <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
         </a>
       </div>
     </div>
@@ -401,7 +565,7 @@ function switchResultTab(tabKey) {
 async function shareAsUserB() {
   const selectedChannelsB = AppState.userB.channels.filter(c => AppState.userB.selectedIds.has(c.id));
   if (selectedChannelsB.length === 0) {
-    showToast('請先載入並選擇你的頻道！', 'warning');
+    showToast('Please select your channels first!', 'warning');
     return;
   }
 
@@ -433,10 +597,10 @@ async function shareAsUserB() {
         });
       }
 
-      showToast('已將你的品味打包為全新邀請連結！', 'success');
+      showToast(t('toast_generating'), 'success');
     }
   } catch (err) {
-    showToast('打包失敗: ' + err.message, 'error');
+    showToast('Pack failed: ' + err.message, 'error');
   }
 }
 
@@ -445,7 +609,7 @@ async function exportTasteCard() {
   const cardElement = document.getElementById('tasteShareCardPreview');
   if (!cardElement) return;
 
-  showToast('正在產生專屬比對圖卡...', 'info');
+  showToast('Generating share card image...', 'info');
 
   try {
     if (window.html2canvas) {
@@ -461,12 +625,12 @@ async function exportTasteCard() {
       link.href = imgData;
       link.click();
 
-      showToast('圖卡已成功下載！', 'success');
+      showToast(t('toast_card_success'), 'success');
     } else {
-      showToast('圖卡套件尚未載入，請稍候重試', 'warning');
+      showToast('Image generator loading, please retry in a moment', 'warning');
     }
   } catch (err) {
-    showToast('匯出失敗: ' + err.message, 'error');
+    showToast('Export failed: ' + err.message, 'error');
   }
 }
 
@@ -474,7 +638,7 @@ async function exportTasteCard() {
 window.addEventListener('DOMContentLoaded', () => {
   parseUrlHash();
   checkInviteSession();
-  checkAuthStatus();
+  applyTranslations();
 
   // Preload Mock A for Creator mode convenience
   loadSubscriptions('A', 'A');

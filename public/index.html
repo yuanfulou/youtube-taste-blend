@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube Taste Blend | YouTube 品味雷達 (雙人品味比對與推坑)</title>
+  <title>YouTube Taste Blend | YouTube 品味雷達</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -27,7 +27,7 @@
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="/style.css" />
-  <!-- CDN Scripts for features: Confetti, html2canvas, QRCode -->
+  <!-- CDN Scripts: Confetti, html2canvas, QRCode -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -43,21 +43,25 @@
     <header class="glass-card rounded-2xl p-4 md:p-5 flex items-center justify-between shadow-xl border border-slate-800">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 via-purple-600 to-indigo-500 flex items-center justify-center text-white text-lg font-bold shadow-lg shadow-rose-500/20">
-          <i class="fa-solid fa-compact-disc animate-spin-slow"></i>
+          <i class="fa-solid fa-compact-disc"></i>
         </div>
         <div>
-          <h1 class="text-xl md:text-2xl font-black tracking-tight gradient-text">
+          <h1 class="text-xl md:text-2xl font-black tracking-tight gradient-text" data-i18n="brand_title">
             YouTube Taste Blend
           </h1>
-          <p class="text-[11px] md:text-xs text-slate-400 font-medium">YouTube 品味雷達 · 零存儲隱私比對</p>
+          <p class="text-[11px] md:text-xs text-slate-400 font-medium" data-i18n="brand_subtitle">YouTube 品味雷達 · 零存儲隱私比對</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <span class="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-800/80">
+        <span class="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-800/80" data-i18n="zero_storage_badge">
           <i class="fa-solid fa-shield-halved"></i> 100% 零伺服器存儲
         </span>
+        <!-- Language Switcher Button -->
+        <button onclick="toggleLanguage()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800/90 hover:bg-slate-700 text-rose-300 border border-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-globe"></i> <span id="langToggleBtn">English</span>
+        </button>
         <button onclick="setAppMode(AppState.mode === 'creator' ? 'receiver' : 'creator')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
-          <i class="fa-solid fa-arrows-rotate mr-1"></i> 切換視角
+          <i class="fa-solid fa-arrows-rotate mr-1"></i> <span data-i18n="switch_perspective">切換視角</span>
         </button>
       </div>
     </header>
@@ -70,13 +74,13 @@
       <div class="glass-card rounded-3xl p-6 md:p-8 relative overflow-hidden border border-rose-500/20">
         <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div class="space-y-3 max-w-xl">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-950/80 border border-rose-800/80 text-rose-300 text-xs font-bold">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-950/80 border border-rose-800/80 text-rose-300 text-xs font-bold" data-i18n="step1_badge">
             <i class="fa-solid fa-sparkles"></i> Step 1: 建立你的專屬品味包
           </div>
           <h2 class="text-2xl md:text-3xl font-extrabold text-white leading-tight">
-            看看你跟好友的 <span class="text-rose-400">YouTube 品味契合度</span> 有多高？
+            <span data-i18n="hero_title_1">看看你跟好友的 </span><span class="text-rose-400" data-i18n="hero_title_highlight">YouTube 品味契合度</span><span data-i18n="hero_title_2"> 有多高？</span>
           </h2>
-          <p class="text-xs md:text-sm text-slate-400 leading-relaxed">
+          <p class="text-xs md:text-sm text-slate-400 leading-relaxed" data-i18n="hero_desc">
             授權或載入你的訂閱清單，勾選想公開的頻道。系統會透過 16-byte 二進位壓縮編碼進網址，後端完全不保存任何隱私紀錄。
           </p>
         </div>
@@ -87,16 +91,16 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <i class="fa-solid fa-list-check text-rose-400"></i> 管理公開訂閱清單
+              <i class="fa-solid fa-list-check text-rose-400"></i> <span data-i18n="manage_subs">管理公開訂閱清單</span>
             </h3>
-            <p class="text-xs text-slate-400">可搜尋與取消勾選不想讓好友知道的私人/敏感頻道</p>
+            <p class="text-xs text-slate-400" data-i18n="manage_subs_desc">可搜尋與取消勾選不想讓好友知道的私人/敏感頻道</p>
           </div>
           <div class="flex items-center gap-2">
             <a href="/auth/google" class="btn-google-oauth px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-rose-600/30 flex items-center gap-2">
-              <i class="fa-brands fa-google"></i> 登入 Google 同步
+              <i class="fa-brands fa-google"></i> <span data-i18n="btn_google_login">登入 Google 同步</span>
             </a>
             <button onclick="loadSubscriptions('A', 'A')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 transition">
-              <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> 一鍵示範資料
+              <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> <span data-i18n="btn_mock_data">一鍵示範資料</span>
             </button>
           </div>
         </div>
@@ -104,14 +108,14 @@
         <!-- Name & Filter Bar -->
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
           <div class="md:col-span-4">
-            <label class="text-[11px] font-bold text-slate-400 block mb-1">你的暱稱：</label>
-            <input type="text" id="inputUserAName" value="Alice" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-rose-500 font-semibold" placeholder="輸入你的暱稱" />
+            <label class="text-[11px] font-bold text-slate-400 block mb-1" data-i18n="label_nickname">你的暱稱：</label>
+            <input type="text" id="inputUserAName" value="Alice" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-rose-500 font-semibold" />
           </div>
           <div class="md:col-span-8">
-            <label class="text-[11px] font-bold text-slate-400 block mb-1">快速搜尋頻道：</label>
+            <label class="text-[11px] font-bold text-slate-400 block mb-1" data-i18n="label_search">快速搜尋頻道：</label>
             <div class="relative">
               <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-xs text-slate-500"></i>
-              <input type="text" id="searchChannelA" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-rose-500" placeholder="輸入關鍵字篩選..." />
+              <input type="text" id="searchChannelA" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-rose-500" data-i18n-placeholder="search_placeholder" placeholder="輸入關鍵字篩選..." />
             </div>
           </div>
         </div>
@@ -119,17 +123,17 @@
         <!-- Category Badges & Bulk Select -->
         <div class="flex items-center justify-between flex-wrap gap-2 pt-1">
           <div class="flex items-center gap-1.5 overflow-x-auto text-xs py-1">
-            <button onclick="AppState.activeFilterA='all'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-rose-950 text-rose-300 font-bold border border-rose-800 text-[11px]">全部</button>
-            <button onclick="AppState.activeFilterA='indie'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800 text-[11px]">✨ 僅小眾寶藏</button>
-            <button onclick="AppState.activeFilterA='Tech'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]">科技</button>
-            <button onclick="AppState.activeFilterA='Science'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]">科普</button>
-            <button onclick="AppState.activeFilterA='Dev'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]">程式開發</button>
+            <button onclick="AppState.activeFilterA='all'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-rose-950 text-rose-300 font-bold border border-rose-800 text-[11px]" data-i18n="filter_all">全部</button>
+            <button onclick="AppState.activeFilterA='indie'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800 text-[11px]" data-i18n="filter_indie">✨ 僅小眾寶藏</button>
+            <button onclick="AppState.activeFilterA='Tech'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]" data-i18n="filter_tech">科技</button>
+            <button onclick="AppState.activeFilterA='Science'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]" data-i18n="filter_science">科普</button>
+            <button onclick="AppState.activeFilterA='Dev'; renderChannelSelection('A')" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[11px]" data-i18n="filter_dev">程式開發</button>
           </div>
           <div class="flex items-center gap-2 text-xs">
-            <span class="text-slate-400 text-[11px]">已選擇 <span id="selectedCountA" class="text-rose-400 font-bold">0</span> / <span id="totalCountA">0</span></span>
-            <button onclick="selectAllChannels('A', true)" class="text-[11px] text-slate-400 hover:text-slate-200">全選</button>
+            <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountA" class="text-rose-400 font-bold">0</span> / <span id="totalCountA">0</span></span>
+            <button onclick="selectAllChannels('A', true)" class="text-[11px] text-slate-400 hover:text-slate-200" data-i18n="select_all">全選</button>
             <span class="text-slate-600">|</span>
-            <button onclick="selectAllChannels('A', false)" class="text-[11px] text-slate-400 hover:text-rose-400">全取消</button>
+            <button onclick="selectAllChannels('A', false)" class="text-[11px] text-slate-400 hover:text-rose-400" data-i18n="deselect_all">全取消</button>
           </div>
         </div>
 
@@ -141,7 +145,7 @@
         <!-- Action Button: Generate URL -->
         <div class="pt-2">
           <button onclick="generateShareUrl()" class="w-full py-4 bg-gradient-to-r from-rose-600 via-pink-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white rounded-2xl font-bold text-sm transition shadow-xl shadow-rose-600/30 flex items-center justify-center gap-2 hover-lift">
-            <i class="fa-solid fa-wand-magic-sparkles text-base"></i> 生成專屬品味邀請連結 (#u1)
+            <i class="fa-solid fa-wand-magic-sparkles text-base"></i> <span data-i18n="btn_generate_url">生成專屬品味邀請連結 (#u1)</span>
           </button>
         </div>
       </div>
@@ -156,13 +160,13 @@
           <i class="fa-solid fa-gamepad"></i>
         </div>
         <div class="space-y-1">
-          <div class="inline-block px-3 py-1 rounded-full bg-purple-950/80 border border-purple-800 text-purple-300 text-xs font-bold">
+          <div class="inline-block px-3 py-1 rounded-full bg-purple-950/80 border border-purple-800 text-purple-300 text-xs font-bold" data-i18n="receiver_badge">
             收到品味挑戰！
           </div>
           <h2 class="text-2xl md:text-3xl font-extrabold text-white">
-            <span id="receiverInviterName" class="text-purple-400">好友</span> 邀請你進行 YouTube 品味大對決！
+            <span id="receiverInviterName" class="text-purple-400">好友</span><span data-i18n="receiver_title_suffix"> 邀請你進行 YouTube 品味大對決！</span>
           </h2>
-          <p class="text-xs md:text-sm text-slate-400 max-w-lg mx-auto">
+          <p class="text-xs md:text-sm text-slate-400 max-w-lg mx-auto" data-i18n="receiver_desc">
             匯入你的 YouTube 訂閱，看看你們的常看頻道重疊率有多高，誰才是彼此的終極推坑王！
           </p>
         </div>
@@ -173,40 +177,40 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
-              <i class="fa-solid fa-user-check text-purple-400"></i> 設定你的比對清單
+              <i class="fa-solid fa-user-check text-purple-400"></i> <span data-i18n="receiver_config_title">設定你的比對清單</span>
             </h3>
-            <p class="text-xs text-slate-400">已成功載入 <span id="receiverInviterBadge" class="text-purple-400 font-bold">好友</span> 的加密品味數據</p>
+            <p class="text-xs text-slate-400"><span data-i18n="receiver_config_desc">已成功載入好友的加密品味數據</span> (<span id="receiverInviterBadge" class="text-purple-400 font-bold">好友</span>)</p>
           </div>
           <div class="flex items-center gap-2">
             <a href="/auth/google" class="btn-google-oauth px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-purple-600/30 flex items-center gap-2">
-              <i class="fa-brands fa-google"></i> 登入 Google 同步
+              <i class="fa-brands fa-google"></i> <span data-i18n="btn_google_login">登入 Google 同步</span>
             </a>
             <button onclick="loadSubscriptions('B', 'B')" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700 transition">
-              <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> 一鍵示範資料 (User B)
+              <i class="fa-solid fa-bolt text-amber-400 mr-1"></i> <span data-i18n="btn_mock_data">一鍵示範資料 (User B)</span>
             </button>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
           <div class="md:col-span-4">
-            <label class="text-[11px] font-bold text-slate-400 block mb-1">你的暱稱：</label>
+            <label class="text-[11px] font-bold text-slate-400 block mb-1" data-i18n="label_nickname">你的暱稱：</label>
             <input type="text" id="inputUserBName" value="Bob" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500 font-semibold" />
           </div>
           <div class="md:col-span-8">
-            <label class="text-[11px] font-bold text-slate-400 block mb-1">快速搜尋頻道：</label>
+            <label class="text-[11px] font-bold text-slate-400 block mb-1" data-i18n="label_search">快速搜尋頻道：</label>
             <div class="relative">
               <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-xs text-slate-500"></i>
-              <input type="text" id="searchChannelB" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500" placeholder="輸入關鍵字篩選..." />
+              <input type="text" id="searchChannelB" class="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-500" data-i18n-placeholder="search_placeholder" placeholder="輸入關鍵字篩選..." />
             </div>
           </div>
         </div>
 
         <div class="flex items-center justify-between text-xs pt-1">
-          <span class="text-slate-400 text-[11px]">已選擇 <span id="selectedCountB" class="text-purple-400 font-bold">0</span> / <span id="totalCountB">0</span></span>
+          <span class="text-slate-400 text-[11px]"><span data-i18n="selected_text">已選擇</span> <span id="selectedCountB" class="text-purple-400 font-bold">0</span> / <span id="totalCountB">0</span></span>
           <div class="flex items-center gap-2">
-            <button onclick="selectAllChannels('B', true)" class="text-[11px] text-slate-400 hover:text-slate-200">全選</button>
+            <button onclick="selectAllChannels('B', true)" class="text-[11px] text-slate-400 hover:text-slate-200" data-i18n="select_all">全選</button>
             <span class="text-slate-600">|</span>
-            <button onclick="selectAllChannels('B', false)" class="text-[11px] text-slate-400 hover:text-rose-400">全取消</button>
+            <button onclick="selectAllChannels('B', false)" class="text-[11px] text-slate-400 hover:text-rose-400" data-i18n="deselect_all">全取消</button>
           </div>
         </div>
 
@@ -216,7 +220,7 @@
 
         <div class="pt-2">
           <button onclick="runBlendWithUserA()" class="w-full py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-rose-600 hover:from-purple-500 hover:to-rose-500 text-white rounded-2xl font-bold text-sm transition shadow-xl shadow-purple-600/30 flex items-center justify-center gap-2 hover-lift">
-            <i class="fa-solid fa-bolt text-amber-300"></i> 開始比對！揭曉契合度報告
+            <i class="fa-solid fa-bolt text-amber-300"></i> <span data-i18n="btn_start_blend">開始比對！揭曉契合度報告</span>
           </button>
         </div>
       </div>
@@ -270,19 +274,19 @@
         <!-- 4 Quick Stat Counters -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center pt-2">
           <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800">
-            <p class="text-[10px] text-slate-400 uppercase font-semibold">共同訂閱</p>
+            <p class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="stat_common">共同訂閱</p>
             <p id="resCountCommon" class="text-2xl font-black text-rose-400 mt-0.5">0</p>
           </div>
           <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800">
-            <p class="text-[10px] text-slate-400 uppercase font-semibold">A 獨有推坑</p>
+            <p class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="stat_a_only">A 獨有推坑</p>
             <p id="resCountAOnly" class="text-2xl font-black text-indigo-400 mt-0.5">0</p>
           </div>
           <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800">
-            <p class="text-[10px] text-slate-400 uppercase font-semibold">B 獨有推坑</p>
+            <p class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="stat_b_only">B 獨有推坑</p>
             <p id="resCountBOnly" class="text-2xl font-black text-purple-400 mt-0.5">0</p>
           </div>
           <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800">
-            <p class="text-[10px] text-slate-400 uppercase font-semibold">小眾寶藏</p>
+            <p class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="stat_indie">小眾寶藏</p>
             <p id="resCountIndie" class="text-2xl font-black text-amber-400 mt-0.5">0</p>
           </div>
         </div>
@@ -291,10 +295,10 @@
       <!-- Action Buttons: Export Card & Re-share -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <button onclick="exportTasteCard()" class="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 hover-lift">
-          <i class="fa-solid fa-camera-retro text-base"></i> 下載 IG Story / Threads 比對圖卡
+          <i class="fa-solid fa-camera-retro text-base"></i> <span data-i18n="btn_download_card">下載 IG Story / Threads 比對圖卡</span>
         </button>
         <button onclick="shareAsUserB()" class="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 hover-lift">
-          <i class="fa-solid fa-share-nodes text-base"></i> 換我發起挑戰 (打包我的邀請網址)
+          <i class="fa-solid fa-share-nodes text-base"></i> <span data-i18n="btn_share_as_b">換我發起挑戰 (打包我的邀請網址)</span>
         </button>
       </div>
 
@@ -302,20 +306,20 @@
       <div class="glass-card rounded-3xl p-6 md:p-8 space-y-5 border border-slate-800">
         <div class="flex items-center justify-between flex-wrap gap-3 border-b border-slate-800 pb-4">
           <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-            <i class="fa-solid fa-compass text-rose-400"></i> 頻道清單與推坑清冊
+            <i class="fa-solid fa-compass text-rose-400"></i> <span data-i18n="channel_list_title">頻道清單與推坑清冊</span>
           </h3>
           <div class="flex items-center gap-1.5 overflow-x-auto text-xs">
             <button onclick="switchResultTab('common')" id="btnTabRes_common" class="tab-res-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-600 text-white transition flex items-center gap-1.5">
-              <i class="fa-solid fa-heart text-xs"></i> 共同喜愛 (<span id="tabCountCommon">0</span>)
+              <i class="fa-solid fa-heart text-xs"></i> <span data-i18n="tab_common">共同喜愛</span> (<span id="tabCountCommon">0</span>)
             </button>
             <button onclick="switchResultTab('a_only')" id="btnTabRes_a_only" class="tab-res-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition">
-              A 推薦 (<span id="tabCountAOnly">0</span>)
+              <span data-i18n="tab_a_only">A 推薦</span> (<span id="tabCountAOnly">0</span>)
             </button>
             <button onclick="switchResultTab('b_only')" id="btnTabRes_b_only" class="tab-res-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition">
-              B 推薦 (<span id="tabCountBOnly">0</span>)
+              <span data-i18n="tab_b_only">B 推薦</span> (<span id="tabCountBOnly">0</span>)
             </button>
             <button onclick="switchResultTab('indie')" id="btnTabRes_indie" class="tab-res-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800/80 text-slate-400 hover:text-slate-200 transition">
-              ✨ 小眾寶藏 (<span id="tabCountIndie">0</span>)
+              <span data-i18n="tab_indie">✨ 小眾寶藏</span> (<span id="tabCountIndie">0</span>)
             </button>
           </div>
         </div>
@@ -333,7 +337,7 @@
   <!-- MODAL: SHARE LINK & QR CODE                -->
   <!-- ========================================== -->
   <div id="modalShareLink" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-rose-500/30 space-y-6 shadow-2xl relative animate-in fade-in zoom-in-95">
+    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-md w-full border border-rose-500/30 space-y-6 shadow-2xl relative">
       <button onclick="document.getElementById('modalShareLink').classList.add('hidden')" class="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition">
         <i class="fa-solid fa-xmark"></i>
       </button>
@@ -342,8 +346,8 @@
         <div class="w-12 h-12 rounded-2xl bg-rose-600/20 text-rose-400 flex items-center justify-center text-xl mx-auto border border-rose-500/30">
           <i class="fa-solid fa-paper-plane"></i>
         </div>
-        <h3 class="text-lg font-bold text-white">專屬品味邀請網址已產生！</h3>
-        <p class="text-xs text-slate-400">複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。</p>
+        <h3 class="text-lg font-bold text-white" data-i18n="modal_share_title">專屬品味邀請網址已產生！</h3>
+        <p class="text-xs text-slate-400" data-i18n="modal_share_desc">複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。</p>
       </div>
 
       <!-- QR Code Display -->
@@ -351,13 +355,56 @@
 
       <!-- Copy Link Box -->
       <div class="space-y-1.5">
-        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">專屬分享網址 (含 16-Byte Brotli Hash)：</label>
+        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block" data-i18n="modal_share_label">專屬分享網址 (含 16-Byte Brotli Hash)：</label>
         <div class="flex gap-2">
           <input type="text" id="outputShareUrl" readonly class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-emerald-400 font-mono select-all focus:outline-none" />
-          <button onclick="copyToClipboard('outputShareUrl')" class="px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition flex-shrink-0">
+          <button onclick="copyToClipboard('outputShareUrl')" class="px-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition flex-shrink-0" data-i18n="btn_copy">
             複製
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: GOOGLE OAUTH SETUP GUIDE            -->
+  <!-- ========================================== -->
+  <div id="modalOAuthGuide" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+    <div class="glass-card rounded-3xl p-6 md:p-8 max-w-lg w-full border border-amber-500/40 space-y-5 shadow-2xl relative">
+      <button onclick="closeOAuthModal()" class="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl flex-shrink-0 border border-amber-500/30">
+          <i class="fa-solid fa-key"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white" data-i18n="oauth_modal_title">Google OAuth 設定說明</h3>
+          <p class="text-xs text-slate-400" data-i18n="oauth_modal_desc">如欲使用真正的 Google 帳號授權同步訂閱，請完成以下 3 個簡單步驟：</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 space-y-3 text-xs text-slate-300 leading-relaxed">
+        <p data-i18n="oauth_step1">1. 至 Google Cloud Console 啟用 YouTube Data API v3。</p>
+        <div>
+          <p data-i18n="oauth_step2">2. 建立 OAuth 2.0 憑證，並將重新導向 URI 設定為：</p>
+          <div class="mt-1 space-y-1 font-mono text-[11px] text-amber-300 bg-slate-950 p-2.5 rounded-xl border border-slate-800 select-all">
+            <p>http://localhost:3030/auth/callback</p>
+            <p>http://100.127.138.61:3030/auth/callback</p>
+          </div>
+        </div>
+        <p data-i18n="oauth_step3">3. 將 Client ID 與 Secret 填入專案的 .env 檔案並重啟。</p>
+      </div>
+
+      <div class="p-3 rounded-xl bg-amber-950/40 border border-amber-900/60 text-xs text-amber-300" data-i18n="oauth_tip">
+        💡 提示：在尚未設定金鑰前，您可以點擊【一鍵示範資料】直接進行全功能體驗！
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button onclick="closeOAuthModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition">
+          我知道了 (Close)
+        </button>
       </div>
     </div>
   </div>

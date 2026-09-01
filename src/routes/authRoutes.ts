@@ -25,17 +25,15 @@ export function createAuthRouter(youtubeService: YouTubeService): Router {
     const returnTo = (req.query.returnTo as string) || '/';
     
     if (!youtubeService.getIsConfigured()) {
-      return res.status(400).json({
-        error: 'GOOGLE_OAUTH_NOT_CONFIGURED',
-        message: 'Google Client ID / Secret are not configured. You can use /api/mock/subscriptions for testing.'
-      });
+      // Gracefully redirect to frontend with oauth_help param instead of showing raw error
+      return res.redirect('/?oauth_help=1');
     }
 
     try {
       const authUrl = youtubeService.generateAuthUrl(returnTo);
       res.redirect(authUrl);
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      res.redirect(`/?auth_error=${encodeURIComponent(err.message)}`);
     }
   });
 
