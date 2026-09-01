@@ -98,6 +98,16 @@ const I18N = {
     empty_subs_title: '目前沒有任何訂閱頻道 (0 頻道)',
     empty_subs_desc: '您的 Google 帳號尚未訂閱任何頻道，或訂閱設定為不公開。您可以點擊下方按鈕載入示範資料進行體驗！',
     btn_load_sample_hint: '一鍵載入示範頻道體驗',
+    loading_oauth_title: '正在跳轉至 Google 安全授權...',
+    loading_oauth_desc: '正在連接 Google 安全登入，請稍候片刻 🚀',
+    loading_sync_title: '正在從 YouTube 同步訂閱清單...',
+    loading_sync_desc: '正在分析頻道資料、最新活躍度與小眾寶藏 ✨',
+    loading_sample_title: '正在載入示範頻道清單...',
+    loading_sample_desc: '為您準備豐富的科技、知識與寶藏頻道 ⚡',
+    loading_blend_title: '正在計算雙人品味雷達...',
+    loading_blend_desc: '正在比對彼此共同喜愛與獨有推坑頻道 ⚔️',
+    loading_share_title: '正在打包你的專屬品味包...',
+    loading_share_desc: '正在進行 16-byte 二進位壓縮與極速短碼生成 📦',
     toast_blending: '正在比對你們的品味雷達...',
     toast_card_success: '圖卡已成功下載！',
     toast_preset_50: '已為您快速預選最新活躍前 {n} 個頻道！',
@@ -187,6 +197,16 @@ const I18N = {
     empty_subs_title: 'No Subscriptions Found (0 Channels)',
     empty_subs_desc: 'Your Google account has no public channel subscriptions yet. You can click below to load sample channels to explore!',
     btn_load_sample_hint: 'Load Sample Channels to Explore',
+    loading_oauth_title: 'Redirecting to Google Secure Login...',
+    loading_oauth_desc: 'Connecting to Google OAuth, please wait 🚀',
+    loading_sync_title: 'Syncing Subscriptions from YouTube...',
+    loading_sync_desc: 'Analyzing recent active channels and indie gems ✨',
+    loading_sample_title: 'Loading Sample Channels...',
+    loading_sample_desc: 'Preparing curated tech, science, and gem channels ⚡',
+    loading_blend_title: 'Calculating Taste Blend Radar...',
+    loading_blend_desc: 'Comparing shared favorites and unique recommendations ⚔️',
+    loading_share_title: 'Packing Your Taste Pack...',
+    loading_share_desc: 'Performing 16-byte Brotli compression & shortcode generation 📦',
     toast_blending: 'Analyzing your taste blend...',
     toast_card_success: 'Story card downloaded successfully!',
     toast_preset_50: 'Pre-selected top {n} active channels!',
@@ -343,18 +363,28 @@ function applyTranslations() {
   document.getElementById('langToggleBtn').innerText = t('lang_name');
 }
 
-function openOAuthModal() {
-  document.getElementById('modalOAuthGuide').classList.remove('hidden');
+// Global Loading Overlay Helpers
+function showLoading(title, subtitle) {
+  const overlay = document.getElementById('globalLoadingOverlay');
+  const titleEl = document.getElementById('loadingTitle');
+  const subtitleEl = document.getElementById('loadingSubtitle');
+  if (titleEl && title) titleEl.innerText = title;
+  if (subtitleEl && subtitle) subtitleEl.innerText = subtitle;
+  if (overlay) overlay.classList.remove('hidden');
 }
 
-function closeOAuthModal() {
-  document.getElementById('modalOAuthGuide').classList.add('hidden');
+function hideLoading() {
+  const overlay = document.getElementById('globalLoadingOverlay');
+  if (overlay) overlay.classList.add('hidden');
 }
 
 function startGoogleAuth(target = 'A') {
+  showLoading(t('loading_oauth_title'), t('loading_oauth_desc'));
   const currentHash = window.location.hash || '';
   const returnTo = `/?target=${target}&logged_in=1${currentHash}`;
-  window.location.href = `/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
+  setTimeout(() => {
+    window.location.href = `/auth/google?returnTo=${encodeURIComponent(returnTo)}`;
+  }, 100);
 }
 
 // Toast helper
@@ -427,6 +457,10 @@ async function initAuthAndSubscriptions() {
   if (urlParams.get('auth_error')) {
     showToast('Google OAuth 授權失敗: ' + urlParams.get('auth_error'), 'error');
     window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  }
+
+  if (urlParams.get('logged_in')) {
+    showLoading(t('loading_sync_title'), t('loading_sync_desc'));
   }
 
   // Handle incoming invite link (Direct Hash, Shortcode, or Gist)
@@ -534,6 +568,8 @@ async function initAuthAndSubscriptions() {
     }
   } catch (e) {
     console.error('Error checking auth', e);
+  } finally {
+    hideLoading();
   }
 
   // Fallback to sample data for both sides
@@ -543,6 +579,9 @@ async function initAuthAndSubscriptions() {
 
 // Load Subscriptions (Explicit Mock or fallback)
 async function loadSubscriptions(target = 'A', profile = 'A', showNotice = true) {
+  if (showNotice) {
+    showLoading(t('loading_sample_title'), t('loading_sample_desc'));
+  }
   try {
     const res = await fetch(`/api/mock/subscriptions?profile=${profile}`);
     const data = await res.json();
@@ -563,6 +602,10 @@ async function loadSubscriptions(target = 'A', profile = 'A', showNotice = true)
     }
   } catch (err) {
     if (showNotice) showToast('Failed to load: ' + err.message, 'error');
+  } finally {
+    if (showNotice) {
+      setTimeout(hideLoading, 200);
+    }
   }
 }
 
@@ -879,6 +922,8 @@ async function generateShareUrl() {
     return;
   }
 
+  showLoading(t('loading_share_title'), t('loading_share_desc'));
+
   try {
     const channelIds = selectedChannels.map(c => c.id);
     const res = await fetch('/api/pack', {
@@ -930,6 +975,8 @@ async function generateShareUrl() {
     }
   } catch (err) {
     showToast('Generation failed: ' + err.message, 'error');
+  } finally {
+    hideLoading();
   }
 }
 
@@ -960,7 +1007,7 @@ async function runBlendWithUserA() {
     return;
   }
 
-  showToast(t('toast_blending'), 'info');
+  showLoading(t('loading_blend_title'), t('loading_blend_desc'));
 
   try {
     const selectedChannelsA = AppState.userA.channels.filter(c => AppState.userA.selectedIds.has(c.id));
@@ -997,6 +1044,8 @@ async function runBlendWithUserA() {
     }
   } catch (err) {
     showToast('Blend calculation failed: ' + err.message, 'error');
+  } finally {
+    hideLoading();
   }
 }
 
