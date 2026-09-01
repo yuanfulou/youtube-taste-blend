@@ -57,6 +57,11 @@ const I18N = {
     btn_visit_channel: '前往頻道',
     indie_tag: '✨ 寶藏',
     subs_count: '訂閱',
+    updated_today: '🔥 今天更新',
+    updated_yesterday: '🔥 昨天更新',
+    updated_days_ago: '🔥 {n}天前更新',
+    updated_this_week: '本週更新',
+    active_channel: '持續活躍',
     modal_share_title: '專屬品味邀請網址已產生！',
     modal_share_desc: '複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。',
     modal_share_label: '專屬分享網址 (含 16-Byte Brotli Hash)：',
@@ -66,6 +71,8 @@ const I18N = {
     toast_loaded: '成功載入頻道！已自動預選最新活躍頻道。',
     toast_blending: '正在比對你們的品味雷達...',
     toast_card_success: '圖卡已成功下載！',
+    toast_preset_50: '已為您快速預選最新活躍前 {n} 個頻道！',
+    toast_preset_indie: '已為您選取 {n} 個小眾寶藏頻道！',
     limit_reached_toast: '⚠️ 已達到單次分享上限 (最多 100 個頻道)！如需新增請先取消勾選其他項目。',
     oauth_modal_title: 'Google OAuth 設定說明',
     oauth_modal_desc: '如欲使用真正的 Google 帳號授權同步訂閱，請完成以下 3 個簡單步驟：',
@@ -126,6 +133,11 @@ const I18N = {
     btn_visit_channel: 'Visit Channel',
     indie_tag: '✨ Gem',
     subs_count: 'subs',
+    updated_today: '🔥 Updated today',
+    updated_yesterday: '🔥 Updated yesterday',
+    updated_days_ago: '🔥 {n}d ago',
+    updated_this_week: 'Updated this week',
+    active_channel: 'Active channel',
     modal_share_title: 'Your Taste Invite Link is Ready!',
     modal_share_desc: 'Copy the link to your friend or let them scan the QR code to duel.',
     modal_share_label: 'Custom Share Link (with 16-Byte Brotli Hash):',
@@ -135,6 +147,8 @@ const I18N = {
     toast_loaded: 'Channels loaded! Auto pre-selected recent active channels.',
     toast_blending: 'Analyzing your taste blend...',
     toast_card_success: 'Story card downloaded successfully!',
+    toast_preset_50: 'Pre-selected top {n} active channels!',
+    toast_preset_indie: 'Selected {n} indie gem channels!',
     limit_reached_toast: '⚠️ Maximum limit reached (100 channels)! Please uncheck others to add more.',
     oauth_modal_title: 'Google OAuth Setup Guide',
     oauth_modal_desc: 'To sync real YouTube subscriptions with Google, follow these 3 simple steps:',
@@ -168,9 +182,21 @@ const AppState = {
   activeResultTab: 'common'
 };
 
-function t(key) {
+function t(key, vars = {}) {
   const dict = I18N[AppState.lang] || I18N['zh-TW'];
-  return dict[key] || key;
+  let text = dict[key] || key;
+  for (const [k, v] of Object.entries(vars)) {
+    text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+  }
+  return text;
+}
+
+function formatLastActive(daysAgo) {
+  if (daysAgo === 0) return t('updated_today');
+  if (daysAgo === 1) return t('updated_yesterday');
+  if (daysAgo >= 2 && daysAgo <= 6) return t('updated_days_ago', { n: daysAgo });
+  if (daysAgo >= 7 && daysAgo <= 13) return t('updated_this_week');
+  return t('active_channel');
 }
 
 function toggleLanguage() {
@@ -337,6 +363,8 @@ function renderChannelSelection(target = 'A') {
 
   listEl.innerHTML = filtered.map(c => {
     const isChecked = user.selectedIds.has(c.id);
+    const activeText = formatLastActive(c.lastActiveDaysAgo ?? 14);
+
     return `
       <div class="flex items-center justify-between p-3 rounded-xl ${isChecked ? 'bg-slate-800/90 border-slate-700' : 'bg-slate-900/40 border-slate-800/60 opacity-60'} border hover:border-slate-600 transition cursor-pointer" onclick="toggleChannelSelect('${target}', '${c.id}')">
         <div class="flex items-center gap-3 truncate mr-2">
@@ -344,7 +372,7 @@ function renderChannelSelection(target = 'A') {
           <div class="truncate">
             <p class="font-bold text-xs text-slate-200 truncate">${c.title}</p>
             <div class="flex items-center gap-2 mt-0.5">
-              ${c.lastActive ? `<span class="text-[10px] text-emerald-400 font-medium">${c.lastActive}</span>` : ''}
+              <span class="text-[10px] text-emerald-400 font-medium">${activeText}</span>
               ${c.subscriberCount ? `<span class="text-[10px] text-slate-400">${formatSubscriberCount(c.subscriberCount)} ${t('subs_count')}</span>` : ''}
               ${c.isIndie ? `<span class="px-1.5 py-0.2 rounded bg-amber-950/80 text-amber-300 text-[10px] border border-amber-800/80">${t('indie_tag')}</span>` : ''}
             </div>
@@ -382,7 +410,7 @@ function selectTopActive(target, count = 50) {
     user.selectedIds.add(user.channels[i].id);
   }
   renderChannelSelection(target);
-  showToast(`已為您快速預選最新活躍前 ${user.selectedIds.size} 個頻道！`, 'info');
+  showToast(t('toast_preset_50', { n: user.selectedIds.size }), 'info');
 }
 
 // Select only Indie gems
@@ -392,7 +420,7 @@ function selectIndieOnly(target) {
   const indieList = user.channels.filter(c => c.isIndie).slice(0, MAX_SELECTABLE_CHANNELS);
   indieList.forEach(c => user.selectedIds.add(c.id));
   renderChannelSelection(target);
-  showToast(`已為您選取 ${user.selectedIds.size} 個小眾寶藏頻道！`, 'info');
+  showToast(t('toast_preset_indie', { n: user.selectedIds.size }), 'info');
 }
 
 function selectAllChannels(target, selectAll = true) {
@@ -404,7 +432,7 @@ function selectAllChannels(target, selectAll = true) {
       user.selectedIds.add(user.channels[i].id);
     }
     if (user.channels.length > MAX_SELECTABLE_CHANNELS) {
-      showToast(`已選取至上限 ${MAX_SELECTABLE_CHANNELS} 個頻道`, 'info');
+      showToast(t('limit_reached_toast'), 'info');
     }
   } else {
     user.selectedIds.clear();
@@ -451,7 +479,6 @@ async function generateShareUrl() {
       document.getElementById('outputShareUrl').value = shareUrl;
       document.getElementById('modalShareLink').classList.remove('hidden');
 
-      // Generate QR Code
       const qrContainer = document.getElementById('qrcodeContainer');
       qrContainer.innerHTML = '';
       if (window.QRCode) {
