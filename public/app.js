@@ -222,14 +222,14 @@ const AppState = {
   pageA: 1,
   pageB: 1,
   userA: {
-    name: 'Alice',
+    name: '',
     channels: [],
     selectedIds: new Set(),
     payload: '',
     shareUrl: ''
   },
   userB: {
-    name: 'Bob',
+    name: '',
     channels: [],
     selectedIds: new Set(),
     payload: '',
@@ -250,6 +250,35 @@ function t(key, vars = {}) {
     text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
   }
   return text;
+}
+
+function getRandomNickname() {
+  const pool = RANDOM_NICKNAMES[AppState.lang] || RANDOM_NICKNAMES['zh-TW'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function initRandomNicknames() {
+  const initialA = getRandomNickname();
+  let initialB = getRandomNickname();
+  while (initialB === initialA) {
+    initialB = getRandomNickname();
+  }
+  if (!AppState.userA.name) AppState.userA.name = initialA;
+  if (!AppState.userB.name) AppState.userB.name = initialB;
+  const inputA = document.getElementById('inputUserAName');
+  const inputB = document.getElementById('inputUserBName');
+  if (inputA && !inputA.value) inputA.value = AppState.userA.name;
+  if (inputB && !inputB.value) inputB.value = AppState.userB.name;
+}
+
+function generateRandomNickname(target = 'A') {
+  const randomName = getRandomNickname();
+  const inputEl = document.getElementById(target === 'A' ? 'inputUserAName' : 'inputUserBName');
+  if (inputEl) {
+    inputEl.value = randomName;
+    if (target === 'A') AppState.userA.name = randomName;
+    else AppState.userB.name = randomName;
+  }
 }
 
 function getAvatarEmoji(name, defaultIndex = 0) {
@@ -277,17 +306,6 @@ function formatLastActive(daysAgo) {
   if (daysAgo >= 2 && daysAgo <= 6) return t('updated_days_ago', { n: daysAgo });
   if (daysAgo >= 7 && daysAgo <= 13) return t('updated_this_week');
   return t('active_channel');
-}
-
-function generateRandomNickname(target = 'A') {
-  const pool = RANDOM_NICKNAMES[AppState.lang] || RANDOM_NICKNAMES['zh-TW'];
-  const randomName = pool[Math.floor(Math.random() * pool.length)];
-  const inputEl = document.getElementById(target === 'A' ? 'inputUserAName' : 'inputUserBName');
-  if (inputEl) {
-    inputEl.value = randomName;
-    if (target === 'A') AppState.userA.name = randomName;
-    else AppState.userB.name = randomName;
-  }
 }
 
 function toggleLanguage() {
@@ -1182,8 +1200,23 @@ async function exportTasteCard() {
 
 // App Initialization
 window.addEventListener('DOMContentLoaded', () => {
+  initRandomNicknames();
   applyTranslations();
   initAuthAndSubscriptions();
+
+  const nameInputA = document.getElementById('inputUserAName');
+  if (nameInputA) {
+    nameInputA.addEventListener('input', (e) => {
+      AppState.userA.name = e.target.value.trim() || AppState.userA.name;
+    });
+  }
+
+  const nameInputB = document.getElementById('inputUserBName');
+  if (nameInputB) {
+    nameInputB.addEventListener('input', (e) => {
+      AppState.userB.name = e.target.value.trim() || AppState.userB.name;
+    });
+  }
 
   const searchA = document.getElementById('searchChannelA');
   if (searchA) {
