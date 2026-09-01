@@ -415,7 +415,7 @@ function renderCategoryTabs(target = 'A') {
   const categories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
 
   let html = `
-    <button onclick="setCategoryFilter('${target}', 'all')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 ${activeFilter === 'all' ? 'bg-rose-600 text-white shadow-lg' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'}">
+    <button onclick="setCategoryFilter('${target}', 'all')" class="px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${activeFilter === 'all' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'}">
       <span>${t('filter_all')}</span>
       <span class="text-[10px] px-1.5 py-0.2 rounded-full ${activeFilter === 'all' ? 'bg-rose-950 text-rose-200' : 'bg-slate-800 text-slate-400'}">${user.channels.length}</span>
     </button>
@@ -423,7 +423,7 @@ function renderCategoryTabs(target = 'A') {
 
   if (indieCount > 0) {
     html += `
-      <button onclick="setCategoryFilter('${target}', 'indie')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 ${activeFilter === 'indie' ? 'bg-amber-600 text-white shadow-lg' : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800'}">
+      <button onclick="setCategoryFilter('${target}', 'indie')" class="px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${activeFilter === 'indie' ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800'}">
         <span>${t('filter_indie')}</span>
         <span class="text-[10px] px-1.5 py-0.2 rounded-full ${activeFilter === 'indie' ? 'bg-amber-950 text-amber-200' : 'bg-slate-800 text-amber-400'}">${indieCount}</span>
       </button>
@@ -436,7 +436,7 @@ function renderCategoryTabs(target = 'A') {
     const displayName = getCategoryDisplayName(cat);
 
     html += `
-      <button onclick="setCategoryFilter('${target}', '${cat}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 flex-shrink-0 ${isSelected ? 'bg-rose-600 text-white shadow-lg' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'}">
+      <button onclick="setCategoryFilter('${target}', '${cat}')" class="px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${isSelected ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'}">
         <span>${displayName}</span>
         <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-rose-950 text-rose-200' : 'bg-slate-800 text-slate-400'}">${count}</span>
       </button>
