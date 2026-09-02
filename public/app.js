@@ -96,9 +96,16 @@ const I18N = {
     toast_loaded: '成功載入頻道！已自動預選最新活躍頻道。',
     toast_real_loaded: '🎉 成功從 Google 同步您的真實 YouTube 訂閱頻道！',
     toast_empty_subs: '⚠️ 您的 YouTube 帳號目前無任何公開訂閱頻道。',
-    empty_subs_title: '目前沒有任何訂閱頻道 (0 頻道)',
-    empty_subs_desc: '您的 Google 帳號尚未訂閱任何頻道，或訂閱設定為不公開。您可以點擊下方按鈕載入示範資料進行體驗！',
-    btn_load_sample_hint: '一鍵載入示範頻道體驗',
+    empty_subs_title: '目前沒有任何公開訂閱頻道 (0 頻道)',
+    empty_subs_desc: '您的 Google 帳號尚未訂閱任何頻道，或訂閱設定為不公開。請確認 YouTube 隱私設定或訂閱頻道後再次同步！',
+    btn_load_sample_hint: '重新同步 Google 訂閱',
+    login_creator_title: '登入 Google 同步你的 YouTube 訂閱',
+    login_creator_desc: '安全授權讀取公開訂閱頻道，自由挑選想公開展示的頻道並打包專屬品味邀請包！',
+    login_receiver_title: '與 {name} 進行 YouTube 品味大對決！',
+    login_receiver_desc: '登入 Google 同步你的公開訂閱頻道，一秒揭曉品味重疊度與彼此獨家推坑清單！',
+    toast_must_login_first: '請先點擊「登入 Google 同步」讀取你的 YouTube 訂閱！',
+    auth_required_badge: '🔒 請先登入 Google 同步',
+    privacy_badge_note: '🔒 零儲存保證：純前端即時分析，伺服器絕不儲存你的帳號或頻道資料',
     loading_oauth_title: '正在跳轉至 Google 安全授權...',
     loading_oauth_desc: '正在連接 Google 安全登入，請稍候片刻 🚀',
     loading_sync_title: '正在從 YouTube 同步訂閱清單...',
@@ -197,8 +204,15 @@ const I18N = {
     toast_real_loaded: '🎉 Successfully synced real YouTube subscriptions from Google!',
     toast_empty_subs: '⚠️ No public YouTube subscriptions found in your account.',
     empty_subs_title: 'No Subscriptions Found (0 Channels)',
-    empty_subs_desc: 'Your Google account has no public channel subscriptions yet. You can click below to load sample channels to explore!',
-    btn_load_sample_hint: 'Load Sample Channels to Explore',
+    empty_subs_desc: 'Your Google account has no public channel subscriptions yet. Please make sure your YouTube subscriptions are public or subscribe to channels, then sync again!',
+    btn_load_sample_hint: 'Re-sync Google Subscriptions',
+    login_creator_title: 'Connect Google to Sync Your Subscriptions',
+    login_creator_desc: 'Securely sync your public YouTube subscriptions to curate your taste pack and challenge friends!',
+    login_receiver_title: 'Duel with {name} on YouTube Taste!',
+    login_receiver_desc: 'Connect Google to sync your public subscriptions and instantly reveal your compatibility & recommendations!',
+    toast_must_login_first: 'Please click Google Sync to import your subscriptions first!',
+    auth_required_badge: '🔒 Connect Google First',
+    privacy_badge_note: '🔒 Zero-Storage Guarantee: Client-side analysis only, zero account data stored on servers',
     loading_oauth_title: 'Redirecting to Google Secure Login...',
     loading_oauth_desc: 'Connecting to Google OAuth, please wait 🚀',
     loading_sync_title: 'Syncing Subscriptions from YouTube...',
@@ -251,6 +265,14 @@ const AppState = {
   isAuthenticated: false,
   pageA: 1,
   pageB: 1,
+  myChannels: [], // 當前使用者的真實 YouTube 訂閱清單
+  mySelectedIds: new Set(),
+  myName: '',
+  inviter: {
+    name: 'Friend',
+    payload: '',
+    channels: []
+  },
   userA: {
     name: '',
     channels: [],
@@ -425,24 +447,57 @@ function setAppMode(mode) {
 
   if (mode === 'creator') {
     document.getElementById('viewCreator').classList.remove('hidden');
-    navCreator.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 bg-rose-600 text-white shadow-md';
-    navReceiver.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200';
+    if (navCreator) navCreator.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 bg-rose-600 text-white shadow-md';
+    if (navReceiver) navReceiver.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200';
+
+    // 在發起挑戰模式，User A 代表當前使用者
+    AppState.userA.channels = AppState.myChannels;
+    AppState.userA.selectedIds = new Set(AppState.mySelectedIds);
+    if (AppState.myName) {
+      AppState.userA.name = AppState.myName;
+      const inputA = document.getElementById('inputUserAName');
+      if (inputA) inputA.value = AppState.myName;
+    } else if (!AppState.userA.name) {
+      generateRandomNickname('A');
+    }
+
+    renderCategoryTabs('A');
+    renderChannelSelection('A');
   } else if (mode === 'receiver') {
     document.getElementById('viewReceiver').classList.remove('hidden');
-    navCreator.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200';
-    navReceiver.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-md';
-    document.getElementById('receiverInviterName').innerText = AppState.userA.name;
-    document.getElementById('receiverInviterBadge').innerText = AppState.userA.name;
+    if (navCreator) navCreator.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200';
+    if (navReceiver) navReceiver.className = 'px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 bg-purple-600 text-white shadow-md';
+
+    // 在比對模式，User A 代表邀請者 (好友)
+    AppState.userA.name = AppState.inviter.name;
+    AppState.userA.payload = AppState.inviter.payload;
+    const inviterNameEl = document.getElementById('receiverInviterName');
+    const inviterBadgeEl = document.getElementById('receiverInviterBadge');
+    if (inviterNameEl) inviterNameEl.innerText = AppState.inviter.name;
+    if (inviterBadgeEl) inviterBadgeEl.innerText = AppState.inviter.name;
+
+    // User B 代表當前使用者
+    AppState.userB.channels = AppState.myChannels;
+    AppState.userB.selectedIds = new Set(AppState.mySelectedIds);
+    if (AppState.myName) {
+      AppState.userB.name = AppState.myName;
+      const inputB = document.getElementById('inputUserBName');
+      if (inputB) inputB.value = AppState.myName;
+    } else if (!AppState.userB.name) {
+      generateRandomNickname('B');
+    }
+
+    renderCategoryTabs('B');
+    renderChannelSelection('B');
   } else if (mode === 'result') {
     document.getElementById('viewResult').classList.remove('hidden');
     document.getElementById('viewResult').scrollIntoView({ behavior: 'smooth' });
   }
 }
 
-// Check auth status and auto-fetch real subscriptions if logged in
+// 檢查授權狀態並載入真實 YouTube 訂閱清單
 async function initAuthAndSubscriptions() {
   const urlParams = new URLSearchParams(window.location.search);
-  const targetParam = urlParams.get('target');
   const hash = window.location.hash.substring(1);
   const hashParams = new URLSearchParams(hash);
 
@@ -450,6 +505,9 @@ async function initAuthAndSubscriptions() {
   const shortId = hashParams.get('s');
   const gistId = hashParams.get('g');
   const inviterName = hashParams.get('name') || 'Friend';
+  const hasInvite = Boolean(u1Payload || shortId || gistId);
+
+  const modeSwitcher = document.getElementById('navModeSwitcher');
 
   if (urlParams.get('oauth_help')) {
     openOAuthModal();
@@ -465,108 +523,71 @@ async function initAuthAndSubscriptions() {
     showLoading(t('loading_sync_title'), t('loading_sync_desc'));
   }
 
-  // Handle incoming invite link (Direct Hash, Shortcode, or Gist)
-  if (u1Payload) {
-    AppState.userA.payload = u1Payload;
-    AppState.userA.name = inviterName;
-    setAppMode('receiver');
-  } else if (shortId) {
-    try {
-      const res = await fetch(`/api/shortcode/${shortId}`);
-      const data = await res.json();
-      if (data.success && data.payload) {
-        AppState.userA.payload = data.payload;
-        AppState.userA.name = data.name || inviterName;
-        setAppMode('receiver');
+  // 1. 依據 URL 是否帶有邀請資料決定是否顯示「我想跟朋友比對」按鈕與初始模式
+  let initialMode = 'creator';
+  if (hasInvite) {
+    if (modeSwitcher) modeSwitcher.classList.remove('hidden');
+    AppState.inviter.name = inviterName;
+    if (u1Payload) {
+      AppState.inviter.payload = u1Payload;
+    } else if (shortId) {
+      try {
+        const res = await fetch(`/api/shortcode/${shortId}`);
+        const data = await res.json();
+        if (data.success && data.payload) {
+          AppState.inviter.payload = data.payload;
+          if (data.name) AppState.inviter.name = data.name;
+        }
+      } catch (e) {
+        console.warn('Could not resolve shortcode', e);
       }
-    } catch (e) {
-      console.warn('Could not resolve shortcode', e);
-    }
-  } else if (gistId) {
-    try {
-      const res = await fetch(`https://api.github.com/gists/${gistId}`);
-      const gistData = await res.json();
-      const content = gistData.files?.['youtube-taste.json']?.content;
-      if (content) {
-        const parsed = JSON.parse(content);
-        AppState.userA.payload = parsed.payload;
-        AppState.userA.name = parsed.name || inviterName;
-        setAppMode('receiver');
+    } else if (gistId) {
+      try {
+        const res = await fetch(`https://api.github.com/gists/${gistId}`);
+        const gistData = await res.json();
+        const content = gistData.files?.['youtube-taste.json']?.content;
+        if (content) {
+          const parsed = JSON.parse(content);
+          AppState.inviter.payload = parsed.payload;
+          if (parsed.name) AppState.inviter.name = parsed.name;
+        }
+      } catch (e) {
+        console.warn('Could not resolve Gist', e);
       }
-    } catch (e) {
-      console.warn('Could not resolve Gist', e);
     }
+    initialMode = 'receiver';
   } else {
-    setAppMode('creator');
+    if (modeSwitcher) modeSwitcher.classList.add('hidden');
+    initialMode = 'creator';
   }
 
+  // 2. 檢查 Google 授權狀態並讀取真實訂閱
   try {
     const statusRes = await fetch('/auth/status');
     const statusData = await statusRes.json();
     AppState.isAuthenticated = statusData.authenticated;
 
     if (AppState.isAuthenticated) {
-      const activeTarget = (targetParam === 'B' || AppState.mode === 'receiver') ? 'B' : 'A';
-      
+      if (statusData.profileName) {
+        AppState.myName = statusData.profileName;
+      }
+
       const subRes = await fetch('/api/subscriptions');
       const subData = await subRes.json();
 
       if (subData.channels && subData.channels.length > 0) {
-        const user = activeTarget === 'A' ? AppState.userA : AppState.userB;
-        user.channels = subData.channels;
-        
-        if (statusData.profileName) {
-          user.name = statusData.profileName;
-          const nameInput = document.getElementById(activeTarget === 'A' ? 'inputUserAName' : 'inputUserBName');
-          if (nameInput) nameInput.value = statusData.profileName;
-        }
-
-        // Auto select top 50
+        AppState.myChannels = subData.channels;
         const initialSelected = subData.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
-        user.selectedIds = new Set(initialSelected.map(c => c.id));
-        
-        renderCategoryTabs(activeTarget);
-        renderChannelSelection(activeTarget);
-
-        // Preload the other user's sample data so duel is instantly runnable
-        if (activeTarget === 'A') {
-          await loadSubscriptions('B', 'B', false);
-        } else {
-          if (AppState.userA.channels.length === 0 && !AppState.userA.payload) {
-            await loadSubscriptions('A', 'A', false);
-          }
-          setAppMode('receiver');
-        }
-
+        AppState.mySelectedIds = new Set(initialSelected.map(c => c.id));
         showToast(t('toast_real_loaded'), 'success');
-        return;
       } else {
-        // Logged in but user has 0 public subscriptions
-        const user = activeTarget === 'A' ? AppState.userA : AppState.userB;
-        user.channels = [];
-        user.selectedIds.clear();
-
-        if (statusData.profileName) {
-          user.name = statusData.profileName;
-          const nameInput = document.getElementById(activeTarget === 'A' ? 'inputUserAName' : 'inputUserBName');
-          if (nameInput) nameInput.value = statusData.profileName;
-        }
-
-        renderCategoryTabs(activeTarget);
-        renderChannelSelection(activeTarget);
-
-        if (activeTarget === 'A') {
-          await loadSubscriptions('B', 'B', false);
-        } else {
-          if (AppState.userA.channels.length === 0 && !AppState.userA.payload) {
-            await loadSubscriptions('A', 'A', false);
-          }
-          setAppMode('receiver');
-        }
-
+        AppState.myChannels = [];
+        AppState.mySelectedIds.clear();
         showToast(t('toast_empty_subs'), 'warning');
-        return;
       }
+    } else {
+      AppState.myChannels = [];
+      AppState.mySelectedIds.clear();
     }
   } catch (e) {
     console.error('Error checking auth', e);
@@ -574,9 +595,8 @@ async function initAuthAndSubscriptions() {
     hideLoading();
   }
 
-  // Fallback to sample data for both sides
-  await loadSubscriptions('A', 'A', false);
-  await loadSubscriptions('B', 'B', false);
+  // 3. 套用初始模式
+  setAppMode(initialMode);
 }
 
 // Load Subscriptions (Explicit Mock or fallback)
@@ -611,13 +631,18 @@ async function loadSubscriptions(target = 'A', profile = 'A', showNotice = true)
   }
 }
 
-// Dynamically Render Category Filter Tabs based on currently loaded channels
 function renderCategoryTabs(target = 'A') {
   const user = target === 'A' ? AppState.userA : AppState.userB;
   const tabsContainer = document.getElementById(target === 'A' ? 'categoryTabsA' : 'categoryTabsB');
   const activeFilter = target === 'A' ? AppState.activeFilterA : AppState.activeFilterB;
 
   if (!tabsContainer) return;
+
+  if (!AppState.isAuthenticated || user.channels.length === 0) {
+    tabsContainer.innerHTML = '';
+    renderCategoryChart(target);
+    return;
+  }
 
   const categoryCounts = {};
   let indieCount = 0;
@@ -708,7 +733,7 @@ function renderCategoryChart(target = 'A') {
 
   if (!canvasEl || !legendEl) return;
 
-  if (user.channels.length === 0) {
+  if (!AppState.isAuthenticated || user.channels.length === 0) {
     if (chartCard) chartCard.classList.add('hidden');
     return;
   }
@@ -869,7 +894,43 @@ function renderChannelSelection(target = 'A') {
   countEl.innerText = selectedCount;
   totalEl.innerText = user.channels.length;
 
-  // Handle completely empty subscriptions (0 items)
+  // 1. Handle Unauthenticated State (Prompt to Connect Google)
+  if (!AppState.isAuthenticated) {
+    const isCreator = target === 'A';
+    const ctaTitle = isCreator
+      ? t('login_creator_title')
+      : t('login_receiver_title', { name: AppState.inviter.name || 'Friend' });
+    const ctaDesc = isCreator
+      ? t('login_creator_desc')
+      : t('login_receiver_desc');
+    const themeColor = isCreator ? 'rose' : 'purple';
+
+    listEl.innerHTML = `
+      <div class="col-span-full text-center py-12 px-6 bg-slate-900/60 rounded-3xl border border-dashed border-${themeColor}-500/30 space-y-4">
+        <div class="w-16 h-16 rounded-2xl bg-${themeColor}-500/10 text-${themeColor}-400 flex items-center justify-center text-3xl mx-auto border border-${themeColor}-500/20 shadow-lg shadow-${themeColor}-500/10">
+          <i class="fa-brands fa-google"></i>
+        </div>
+        <div class="space-y-1.5 max-w-md mx-auto">
+          <h4 class="font-extrabold text-base text-white">${ctaTitle}</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">${ctaDesc}</p>
+        </div>
+        <button onclick="startGoogleAuth('${target}')" class="px-6 py-3 bg-gradient-to-r from-${themeColor}-600 via-pink-600 to-indigo-600 hover:from-${themeColor}-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-xl shadow-${themeColor}-600/30 inline-flex items-center gap-2 hover-lift">
+          <i class="fa-brands fa-google"></i> <span>${t('btn_google_login')}</span>
+        </button>
+        <p class="text-[10px] text-slate-500">${t('privacy_badge_note')}</p>
+      </div>
+    `;
+    if (modeBadge) {
+      modeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800 font-semibold';
+      modeBadge.innerText = t('auth_required_badge');
+    }
+    if (countEl) countEl.innerText = '0';
+    if (totalEl) totalEl.innerText = '0';
+    if (paginationEl) paginationEl.innerHTML = '';
+    return;
+  }
+
+  // 2. Handle Authenticated but 0 Public Subscriptions
   if (user.channels.length === 0) {
     listEl.innerHTML = `
       <div class="col-span-full text-center py-10 px-4 bg-slate-900/60 rounded-2xl border border-slate-800/80 space-y-3">
@@ -881,8 +942,8 @@ function renderChannelSelection(target = 'A') {
           <p class="text-[11px] text-slate-400 max-w-sm mx-auto leading-relaxed">${t('empty_subs_desc')}</p>
         </div>
         <div class="flex items-center justify-center gap-2 pt-1">
-          <button onclick="loadSubscriptions('${target}', '${target}', true)" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
-            <i class="fa-solid fa-bolt"></i> <span>${t('btn_load_sample_hint')}</span>
+          <button onclick="startGoogleAuth('${target}')" class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate"></i> <span>${t('btn_load_sample_hint')}</span>
           </button>
         </div>
       </div>
@@ -891,6 +952,8 @@ function renderChannelSelection(target = 'A') {
       modeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800 font-semibold';
       modeBadge.innerText = '0 頻道';
     }
+    if (countEl) countEl.innerText = '0';
+    if (totalEl) totalEl.innerText = '0';
     if (paginationEl) paginationEl.innerHTML = '';
     return;
   }
@@ -1084,6 +1147,12 @@ async function renderQrCodeToImage(imgElementId, text, width = 160) {
 
 // Generate Share URL (User A) - Dual Engine
 async function generateShareUrl() {
+  if (!AppState.isAuthenticated) {
+    showToast(t('toast_must_login_first'), 'warning');
+    startGoogleAuth('A');
+    return;
+  }
+
   const name = document.getElementById('inputUserAName').value.trim() || 'Alice';
   AppState.userA.name = name;
 
@@ -1153,10 +1222,13 @@ async function generateShareUrl() {
 
 function testAsReceiverFromModal() {
   document.getElementById('modalShareLink').classList.add('hidden');
-  setAppMode('receiver');
   if (AppState.userA.shareUrl) {
     const hash = AppState.userA.shareUrl.split('#')[1] || `u1=${AppState.userA.payload}&name=${encodeURIComponent(AppState.userA.name)}`;
     window.history.pushState({}, document.title, `/#${hash}`);
+    document.getElementById('navModeSwitcher')?.classList.remove('hidden');
+    AppState.inviter.name = AppState.userA.name;
+    AppState.inviter.payload = AppState.userA.payload;
+    setAppMode('receiver');
   }
 }
 
@@ -1169,6 +1241,12 @@ function copyToClipboard(elementId) {
 
 // User B starts Blend with User A
 async function runBlendWithUserA() {
+  if (!AppState.isAuthenticated) {
+    showToast(t('toast_must_login_first'), 'warning');
+    startGoogleAuth('B');
+    return;
+  }
+
   const nameB = document.getElementById('inputUserBName').value.trim() || 'Bob';
   AppState.userB.name = nameB;
 
