@@ -12,6 +12,7 @@ interface EphemeralRecord {
   createdAt: number;
   expiresAt: number;
 }
+const MAX_EPHEMERAL_ITEMS = 10000;
 const ephemeralShortcodes = new Map<string, EphemeralRecord>();
 
 // Clean expired records every hour
@@ -204,6 +205,7 @@ export function createApiRouter(youtubeService: YouTubeService): Router {
         }
       });
 
+      res.setHeader('Cache-Control', 'public, max-age=86400');
       res.json({
         success: true,
         dataUrl
@@ -274,6 +276,12 @@ export function createApiRouter(youtubeService: YouTubeService): Router {
     const shortcode = crypto.randomBytes(4).toString('hex'); // 8 characters
     const now = Date.now();
     const ttlMs = 24 * 60 * 60 * 1000; // 24 hours
+
+    // Prevent memory overflow (FIFO eviction)
+    if (ephemeralShortcodes.size >= MAX_EPHEMERAL_ITEMS) {
+      const firstKey = ephemeralShortcodes.keys().next().value;
+      if (firstKey) ephemeralShortcodes.delete(firstKey);
+    }
 
     ephemeralShortcodes.set(shortcode, {
       payload,

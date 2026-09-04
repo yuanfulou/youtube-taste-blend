@@ -73,9 +73,9 @@ export function createAuthRouter(youtubeService: YouTubeService): Router {
         });
       }
 
-      // Preserve returnUrl and target (e.g. Receiver view / target=B)
+      // Preserve returnUrl and target (e.g. Receiver view / target=B), blocking protocol-relative URLs
       let returnUrl = '/?logged_in=1';
-      if (typeof state === 'string' && state.startsWith('/')) {
+      if (typeof state === 'string' && state.startsWith('/') && !state.startsWith('//')) {
         returnUrl = state;
       }
       res.redirect(returnUrl);

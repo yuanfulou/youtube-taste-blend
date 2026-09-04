@@ -147,7 +147,9 @@ export class YouTubeService {
 
     const youtube = google.youtube({ version: 'v3', auth });
     const rawChannels: { id: string; title: string; description: string; thumbnailUrl: string; totalNewItems: number }[] = [];
+    const MAX_PAGES = 10; // Cap at 10 pages (up to 500 channels) to protect quota and avoid timeouts
     let nextPageToken: string | undefined = undefined;
+    let pageCount = 0;
 
     // Step 1: Fetch subscriptions list with pagination
     do {
@@ -177,13 +179,14 @@ export class YouTubeService {
       }
 
       nextPageToken = response.data.nextPageToken;
-    } while (nextPageToken);
+      pageCount++;
+    } while (nextPageToken && pageCount < MAX_PAGES);
 
     if (rawChannels.length === 0) {
       return [];
     }
 
-    // Step 2: Batch enrich channels with topicDetails and statistics (50 channels per batch)
+    // Step 2: Parallel batch enrich channels with topicDetails and statistics (50 channels per batch)
     const channelMap = new Map<string, Partial<ChannelItem>>();
     const channelIdChunks: string[][] = [];
     
@@ -191,7 +194,7 @@ export class YouTubeService {
       channelIdChunks.push(rawChannels.slice(i, i + 50).map(c => c.id));
     }
 
-    for (const chunk of channelIdChunks) {
+    const enrichPromises = channelIdChunks.map(async (chunk) => {
       try {
         const detailsRes = await youtube.channels.list({
           part: ['topicDetails', 'statistics'],
@@ -215,7 +218,9 @@ export class YouTubeService {
       } catch (err) {
         console.warn('Could not enrich some channel details, using fallbacks', err);
       }
-    }
+    });
+
+    await Promise.all(enrichPromises);
 
     // Step 3: Combine raw info with enriched data
     const enrichedList: ChannelItem[] = rawChannels.map(c => {

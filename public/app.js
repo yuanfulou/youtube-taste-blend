@@ -333,6 +333,16 @@ function generateRandomNickname(target = 'A') {
   }
 }
 
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function getAvatarEmoji(name, defaultIndex = 0) {
   if (!name) return EMOJI_AVATARS[defaultIndex % EMOJI_AVATARS.length];
   let hash = 0;
@@ -575,7 +585,14 @@ async function initAuthAndSubscriptions() {
       const subRes = await fetch('/api/subscriptions');
       const subData = await subRes.json();
 
-      if (subData.channels && subData.channels.length > 0) {
+      if (subRes.status === 401 || subData.error) {
+        AppState.isAuthenticated = false;
+        AppState.myChannels = [];
+        AppState.mySelectedIds.clear();
+        if (urlParams.get('logged_in')) {
+          showToast(AppState.lang === 'en-US' ? 'Google session expired. Please log in again.' : 'Google 授權已逾時，請重新點擊登入同步', 'warning');
+        }
+      } else if (subData.channels && subData.channels.length > 0) {
         AppState.myChannels = subData.channels;
         const initialSelected = subData.channels.slice(0, Math.min(50, MAX_SELECTABLE_CHANNELS));
         AppState.mySelectedIds = new Set(initialSelected.map(c => c.id));
@@ -1064,6 +1081,11 @@ function toggleChannelSelect(target, id) {
 // Quick pre-select top N active channels across all items
 function selectTopActive(target, count = 50) {
   const user = target === 'A' ? AppState.userA : AppState.userB;
+  if (!AppState.isAuthenticated || user.channels.length === 0) {
+    showToast(t('toast_must_login_first'), 'warning');
+    startGoogleAuth(target);
+    return;
+  }
   user.selectedIds.clear();
   const limit = Math.min(count, MAX_SELECTABLE_CHANNELS, user.channels.length);
   for (let i = 0; i < limit; i++) {
@@ -1076,6 +1098,11 @@ function selectTopActive(target, count = 50) {
 // Select only Indie gems across all items
 function selectIndieOnly(target) {
   const user = target === 'A' ? AppState.userA : AppState.userB;
+  if (!AppState.isAuthenticated || user.channels.length === 0) {
+    showToast(t('toast_must_login_first'), 'warning');
+    startGoogleAuth(target);
+    return;
+  }
   user.selectedIds.clear();
   const indieList = user.channels.filter(c => c.isIndie).slice(0, MAX_SELECTABLE_CHANNELS);
   indieList.forEach(c => user.selectedIds.add(c.id));
@@ -1085,6 +1112,11 @@ function selectIndieOnly(target) {
 
 function selectAllChannels(target, selectAll = true) {
   const user = target === 'A' ? AppState.userA : AppState.userB;
+  if (!AppState.isAuthenticated || user.channels.length === 0) {
+    showToast(t('toast_must_login_first'), 'warning');
+    startGoogleAuth(target);
+    return;
+  }
   if (selectAll) {
     user.selectedIds.clear();
     const limit = Math.min(MAX_SELECTABLE_CHANNELS, user.channels.length);
@@ -1234,9 +1266,19 @@ function testAsReceiverFromModal() {
 
 function copyToClipboard(elementId) {
   const input = document.getElementById(elementId);
+  if (!input) return;
   input.select();
-  navigator.clipboard.writeText(input.value);
-  showToast(t('copied_toast'), 'success');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(input.value).then(() => {
+      showToast(t('copied_toast'), 'success');
+    }).catch(() => {
+      document.execCommand('copy');
+      showToast(t('copied_toast'), 'success');
+    });
+  } else {
+    document.execCommand('copy');
+    showToast(t('copied_toast'), 'success');
+  }
 }
 
 // User B starts Blend with User A
