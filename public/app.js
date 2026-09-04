@@ -33,7 +33,7 @@ const I18N = {
     hero_title_1: '看看你跟好友的 ',
     hero_title_highlight: 'YouTube 品味契合度',
     hero_title_2: ' 有多高？',
-    hero_desc: '授權或載入你的訂閱清單，勾選想公開的頻道。支援 100 以內純直鏈零儲存，或 1000+ 全量急速短碼分享！',
+    hero_desc: '登入 Google 同步你的訂閱清單，挑選想公開的頻道，一鍵生成極短邀請連結與 QR Code 發給好友！',
     manage_subs: '管理公開訂閱清單',
     manage_subs_desc: '可搜尋與取消勾選不想讓好友知道的私人/敏感頻道',
     btn_google_login: '登入 Google 同步',
@@ -51,8 +51,8 @@ const I18N = {
     deselect_all: '全取消',
     quick_presets: '快速預選：',
     preset_recent_50: '⚡ 前 50 個',
-    preset_recent_100: '⚡ 前 100 個 (直鏈)',
-    preset_select_all_full: '🚀 全選全部 (短碼)',
+    preset_recent_100: '⚡ 前 100 個',
+    preset_select_all_full: '🚀 全選全部',
     preset_indie_only: '✨ 僅小眾寶藏',
     btn_generate_url: '生成專屬品味邀請連結',
     receiver_badge: '收到品味挑戰！',
@@ -140,7 +140,7 @@ const I18N = {
     hero_title_1: 'Discover Your ',
     hero_title_highlight: 'YouTube Taste Blend',
     hero_title_2: ' With Friends!',
-    hero_desc: 'Import your subscriptions and select public channels. Supports ≤100 direct zero-storage links, or 1000+ high-capacity shortcodes!',
+    hero_desc: 'Sync your YouTube subscriptions, select channels to share, and generate a sleek invite link & QR code for friends!',
     manage_subs: 'Manage Public Subscriptions',
     manage_subs_desc: 'Search and uncheck any private channels you prefer not to reveal',
     btn_google_login: 'Google Sync',
@@ -158,8 +158,8 @@ const I18N = {
     deselect_all: 'Deselect All',
     quick_presets: 'Quick Presets:',
     preset_recent_50: '⚡ Top 50',
-    preset_recent_100: '⚡ Top 100 (Direct)',
-    preset_select_all_full: '🚀 Select All (Shortcode)',
+    preset_recent_100: '⚡ Top 100',
+    preset_select_all_full: '🚀 Select All',
     preset_indie_only: '✨ Indie Only',
     btn_generate_url: 'Generate Taste Invite Link',
     receiver_badge: 'Taste Duel Challenge!',
@@ -984,13 +984,8 @@ function renderChannelSelection(target = 'A') {
 
   // Update mode badge
   if (modeBadge) {
-    if (selectedCount <= DIRECT_HASH_LIMIT) {
-      modeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold';
-      modeBadge.innerText = '⚡ 100% 零儲存直鏈 (≤100)';
-    } else {
-      modeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-800 font-semibold';
-      modeBadge.innerText = `🚀 大容量短碼模式 (${selectedCount} 頻道)`;
-    }
+    modeBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-slate-300 border border-slate-800 font-semibold';
+    modeBadge.innerText = `✨ 已選取 ${selectedCount} 個頻道`;
   }
 
   if (filtered.length === 0) {
@@ -1207,35 +1202,24 @@ async function generateShareUrl() {
 
     if (data.success) {
       AppState.userA.payload = data.payload;
-      let shareUrl = '';
       const modeBadge = document.getElementById('modalShareModeBadge');
 
-      if (selectedChannels.length <= DIRECT_HASH_LIMIT) {
-        // Mode 1: Direct 16-byte Brotli URL Hash
-        shareUrl = `${window.location.origin}/#u1=${data.payload}&name=${encodeURIComponent(name)}`;
-        if (modeBadge) {
-          modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800';
-          modeBadge.innerText = `⚡ 100% 零儲存直鏈模式 (${selectedChannels.length} 個頻道)`;
-        }
-      } else {
-        // Mode 2: Ephemeral Shortcode or Gist
-        const shortRes = await fetch('/api/shortcode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            payload: data.payload,
-            name,
-            channelsCount: selectedChannels.length
-          })
-        });
-        const shortData = await shortRes.json();
-        const paramKey = shortData.type === 'gist' ? 'g' : 's';
-        shareUrl = `${window.location.origin}/#${paramKey}=${shortData.shortcode}&name=${encodeURIComponent(name)}`;
-        
-        if (modeBadge) {
-          modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800';
-          modeBadge.innerText = `🚀 大容量極速短碼模式 (${selectedChannels.length} 個頻道 · 24h 暫存)`;
-        }
+      const shortRes = await fetch('/api/shortcode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payload: data.payload,
+          name,
+          channelsCount: selectedChannels.length
+        })
+      });
+      const shortData = await shortRes.json();
+      const paramKey = shortData.type === 'gist' ? 'g' : 's';
+      const shareUrl = `${window.location.origin}/#${paramKey}=${shortData.shortcode}&name=${encodeURIComponent(name)}`;
+      
+      if (modeBadge) {
+        modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800';
+        modeBadge.innerText = `✨ 專屬品味邀請碼 (${selectedChannels.length} 個頻道)`;
       }
 
       AppState.userA.shareUrl = shareUrl;
@@ -1527,33 +1511,24 @@ async function shareAsUserB() {
 
     if (data.success) {
       AppState.userB.payload = data.payload;
-      let shareUrl = '';
       const modeBadge = document.getElementById('modalShareModeBadge');
 
-      if (selectedChannelsB.length <= DIRECT_HASH_LIMIT) {
-        shareUrl = `${window.location.origin}/#u1=${data.payload}&name=${encodeURIComponent(AppState.userB.name)}`;
-        if (modeBadge) {
-          modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800';
-          modeBadge.innerText = `⚡ 100% 零儲存直鏈模式 (${selectedChannelsB.length} 個頻道)`;
-        }
-      } else {
-        const shortRes = await fetch('/api/shortcode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            payload: data.payload,
-            name: AppState.userB.name,
-            channelsCount: selectedChannelsB.length
-          })
-        });
-        const shortData = await shortRes.json();
-        const paramKey = shortData.type === 'gist' ? 'g' : 's';
-        shareUrl = `${window.location.origin}/#${paramKey}=${shortData.shortcode}&name=${encodeURIComponent(AppState.userB.name)}`;
-        
-        if (modeBadge) {
-          modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800';
-          modeBadge.innerText = `🚀 大容量極速短碼模式 (${selectedChannelsB.length} 個頻道 · 24h 暫存)`;
-        }
+      const shortRes = await fetch('/api/shortcode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payload: data.payload,
+          name: AppState.userB.name,
+          channelsCount: selectedChannelsB.length
+        })
+      });
+      const shortData = await shortRes.json();
+      const paramKey = shortData.type === 'gist' ? 'g' : 's';
+      const shareUrl = `${window.location.origin}/#${paramKey}=${shortData.shortcode}&name=${encodeURIComponent(AppState.userB.name)}`;
+      
+      if (modeBadge) {
+        modeBadge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800';
+        modeBadge.innerText = `✨ 專屬品味邀請碼 (${selectedChannelsB.length} 個頻道)`;
       }
 
       AppState.userB.shareUrl = shareUrl;

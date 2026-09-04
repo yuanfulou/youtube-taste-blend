@@ -104,7 +104,7 @@
             <span data-i18n="hero_title_1">看看你跟好友的 </span><span class="text-rose-400" data-i18n="hero_title_highlight">YouTube 品味契合度</span><span data-i18n="hero_title_2"> 有多高？</span>
           </h2>
           <p class="text-xs md:text-sm text-slate-400 leading-relaxed" data-i18n="hero_desc">
-            授權或載入你的訂閱清單，勾選想公開的頻道。支援 100 以內純直鏈零儲存，或 1000+ 全量急速短碼分享！
+            登入 Google 同步你的訂閱清單，挑選想公開的頻道，一鍵生成極短邀請連結與 QR Code 發給好友！
           </p>
         </div>
       </div>
@@ -150,8 +150,8 @@
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="text-slate-400 font-semibold text-[11px]" data-i18n="quick_presets">快速預選：</span>
             <button onclick="selectTopActive('A', 50)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_recent_50">⚡ 前 50 個</button>
-            <button onclick="selectTopActive('A', 100)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_recent_100">⚡ 前 100 個 (直鏈)</button>
-            <button onclick="selectAllChannels('A', true)" class="px-2.5 py-1 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-800 text-[11px] font-bold transition" data-i18n="preset_select_all_full">🚀 全選全部 (短碼)</button>
+            <button onclick="selectTopActive('A', 100)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_recent_100">⚡ 前 100 個</button>
+            <button onclick="selectAllChannels('A', true)" class="px-2.5 py-1 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-800 text-[11px] font-bold transition" data-i18n="preset_select_all_full">🚀 全選全部</button>
             <button onclick="selectIndieOnly('A')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px] font-bold transition" data-i18n="preset_indie_only">✨ 僅小眾寶藏</button>
           </div>
           <div class="flex items-center gap-2">
@@ -492,8 +492,8 @@
         <div class="w-12 h-12 rounded-2xl bg-rose-600/20 text-rose-400 flex items-center justify-center text-xl mx-auto border border-rose-500/30">
           <i class="fa-solid fa-paper-plane"></i>
         </div>
-        <div id="modalShareModeBadge" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-          ⚡ 100% 零儲存直鏈模式
+        <div id="modalShareModeBadge" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800">
+          ✨ 專屬品味邀請碼
         </div>
         <h3 class="text-lg font-bold text-white" data-i18n="modal_share_title">專屬品味邀請網址已產生！</h3>
         <p class="text-xs text-slate-400" data-i18n="modal_share_desc">複製網址發送給好友，或讓好友直接掃描 QR Code 即可進行比對。</p>
